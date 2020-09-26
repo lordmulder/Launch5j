@@ -323,16 +323,21 @@ static BOOL signaled_or_failed(const DWORD wait_result)
 
 static BOOL wait_for_process_ready(const HWND hwnd, const HANDLE process_handle, const DWORD process_id)
 {
+    BOOL input_idle = FALSE;
     const DWORD ticks_start = GetTickCount();
     for (;;)
     {
-        const HWND child_hwnd = find_window_by_process_id(process_id);
-        if (child_hwnd)
+        if (input_idle || signaled_or_failed(WaitForInputIdle(process_handle, 125U)))
         {
-            SwitchToThisWindow(child_hwnd, TRUE);
-            return TRUE;
+            const HWND child_hwnd = find_window_by_process_id(process_id);
+            if (child_hwnd)
+            {
+                SwitchToThisWindow(child_hwnd, TRUE);
+                return TRUE;
+            }
+            input_idle = TRUE;
         }
-        if (signaled_or_failed(WaitForSingleObject(process_handle, 13U)))
+        if (signaled_or_failed(WaitForSingleObject(process_handle, 1U)))
         {
             break;
         }
