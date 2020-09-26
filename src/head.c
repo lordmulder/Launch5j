@@ -23,13 +23,22 @@
 #include "resource.h"
 
 // Const
-static const DWORD SPLASH_SCREEN_TIMEOUT = 30U;
+static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
 
 // Options
-#define ENABLE_SPLASH       1
-#define WAIT_FOR_INPUT_IDLE 1
-//#define JAR_FILE_WRAPPED  1
+#ifndef ENABLE_SPLASH
+#define ENABLE_SPLASH 1
+#endif
+#ifndef JAR_FILE_WRAPPED
+#define JAR_FILE_WRAPPED 0
+#endif
+#ifndef WAIT_FOR_WINDOW
+#define WAIT_FOR_WINDOW 1
+#endif
+#ifndef STAY_ALIVE
+#define STAY_ALIVE 1
+#endif
 
 /* ======================================================================== */
 /* String routines                                                          */
@@ -177,7 +186,9 @@ static const wchar_t *get_executable_directory(const wchar_t *const executable_p
 
 static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, const wchar_t *const executable_directory)
 {
-#ifndef JAR_FILE_WRAPPED
+#if JAR_FILE_WRAPPED
+    return wcsdup(executable_path); /*JAR file is wrapped*/
+#else
     const wchar_t *jarfile_path = NULL;
 
     const wchar_t *const path_prefix = remove_file_extension(executable_path);
@@ -197,8 +208,6 @@ static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, con
 
     free((void*)path_prefix);
     return jarfile_path;
-#else
-    return wcsdup(executable_path); /*JAR file is wrapped*/
 #endif
 }
 
@@ -267,6 +276,77 @@ static BOOL process_window_messages(const HWND hwnd)
         }
     }
     return result;
+}
+
+/* ======================================================================== */
+/* Find window functions                                                    */
+/* ======================================================================== */
+
+typedef struct
+{
+    DWORD process_id;
+    HWND hwnd;
+}
+find_window_t;
+
+static BOOL CALLBACK enum_windows_callback(const HWND hwnd, const LPARAM lparam)
+{
+    DWORD process_id = MAXDWORD;
+    find_window_t *const ptr = (find_window_t*) lparam;
+    if(IsWindowVisible(hwnd))
+    {
+        GetWindowThreadProcessId(hwnd, &process_id);
+        if(process_id == ptr->process_id)
+        {
+            ptr->hwnd = hwnd;
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static HWND find_window_by_process_id(const DWORD process_id)
+{
+    find_window_t find_window_data;
+    find_window_data.process_id = process_id;
+    find_window_data.hwnd = NULL;
+    EnumWindows(enum_windows_callback, (LONG_PTR)&find_window_data);
+    return find_window_data.hwnd;
+}
+
+/* ======================================================================== */
+/* Wait for process                                                         */
+/* ======================================================================== */
+
+static BOOL signaled_or_failed(const DWORD wait_result)
+{
+    return (wait_result == WAIT_OBJECT_0) || (wait_result == WAIT_FAILED);
+}
+
+static BOOL wait_for_process_ready(const HWND hwnd, const HANDLE process_handle, const DWORD process_id)
+{
+    const DWORD ticks_start = GetTickCount();
+    for (;;)
+    {
+        const HWND child_hwnd = find_window_by_process_id(process_id);
+        if (child_hwnd)
+        {
+            SwitchToThisWindow(child_hwnd, TRUE);
+            return TRUE;
+        }
+        if (signaled_or_failed(WaitForSingleObject(process_handle, 13U)))
+        {
+            break;
+        }
+        const DWORD ticks_delta = GetTickCount() - ticks_start;
+        if(ticks_delta > SPLASH_SCREEN_TIMEOUT)
+        {
+            break;
+        }
+        process_window_messages(hwnd);
+    }
+
+    return FALSE;
 }
 
 /* ======================================================================== */
@@ -344,7 +424,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     int result = -1;
     const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *command_line = NULL;
     HGDIOBJ splash_image = NULL;
-    DWORD exit_code = 0U;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
 
@@ -356,7 +435,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 
     // Show the splash screen
-#ifdef ENABLE_SPLASH
+#if ENABLE_SPLASH
     if(splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_SPLASH_BITMAP), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
     {
         if(create_splash_screen(hwnd, splash_image))
@@ -401,7 +480,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Does the JAR file exist?
-#ifndef JAR_FILE_WRAPPED
+#if !JAR_FILE_WRAPPED
     if(!file_exists(jarfile_path))
     {
         show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"JAR not found", L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
@@ -425,7 +504,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Process pending window messages
-#ifdef ENABLE_SPLASH
+#if ENABLE_SPLASH
     process_window_messages(hwnd);
 #endif
 
@@ -446,33 +525,27 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Process pending window messages
-#ifdef ENABLE_SPLASH
+#if ENABLE_SPLASH
     process_window_messages(hwnd);
-#ifdef WAIT_FOR_INPUT_IDLE
-    for (DWORD t = 0U; t < SPLASH_SCREEN_TIMEOUT; ++t)
-    {
-        if (WaitForInputIdle(process_info.hProcess, 1000U) != WAIT_TIMEOUT)
-        {
-            break; /*child-process is ready!*/
-        }
-        if (WaitForSingleObject(process_info.hProcess, 1U) != WAIT_TIMEOUT)
-        {
-            break; /*child process terminated!*/
-        }
-        process_window_messages(hwnd);
-    }
+#if WAIT_FOR_WINDOW
+    wait_for_process_ready(hwnd, process_info.hProcess, process_info.dwProcessId);
 #endif
     destroy_window(&hwnd);
 #endif
 
-    // Wait for process to exit
-    WaitForSingleObject(process_info.hProcess, INFINITE);
-
-    // Get the exit code
-    if(GetExitCodeProcess(process_info.hProcess, &exit_code))
+    // Wait for process to exit, then get exit code
+#if STAY_ALIVE
+    if(WaitForSingleObject(process_info.hProcess, INFINITE) == WAIT_OBJECT_0)
     {
-        result = (int) exit_code;
+        DWORD exit_code = 0U;
+        if(GetExitCodeProcess(process_info.hProcess, &exit_code))
+        {
+            result = (int) exit_code;
+        }
     }
+#else
+    result = 0;
+#endif
 
 cleanup:
 

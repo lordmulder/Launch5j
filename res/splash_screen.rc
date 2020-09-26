@@ -13,8 +13,5 @@
 
 #include "../src/resource.h"
 
-// ICON
-ID_APP_ICON      ICON   "launcher.ico"
-
 // BITMAP
 ID_SPLASH_BITMAP BITMAP "splash_screen.bmp"
