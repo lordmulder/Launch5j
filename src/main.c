@@ -1,14 +1,35 @@
+/************************************************************/
+/* Launch5j, by LoRd_MuldeR <MuldeR2@GMX.de>                */
+/* Java JAR wrapper for creating Windows native executables */
+/* https://github.com/lordmulder/                           */
+/*                                                          */
+/* This work has been released under the MIT license.       */
+/* Please see LICENSE.TXT for details!                      */
+/*                                                          */
+/* ACKNOWLEDGEMENT                                          */
+/* This project is partly inspired by the Launch4j project: */
+/* https://sourceforge.net/p/launch4j/                      */
+/************************************************************/
+
+#define WIN32_LEAN_AND_MEAN 1
+
+#include <Windows.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <direct.h>
+#include "resource.h"
 
-#define WIN32_LEAN_AND_MEAN 1
-#include <Windows.h>
-
+// Const
+static const DWORD SPLASH_SCREEN_TIMEOUT = 30U;
 static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
+
+// Options
+#define ENABLE_SPLASH       1
+#define WAIT_FOR_INPUT_IDLE 1
+//#define JAR_FILE_WRAPPED  1
 
 /* ======================================================================== */
 /* String routines                                                          */
@@ -156,6 +177,7 @@ static const wchar_t *get_executable_directory(const wchar_t *const executable_p
 
 static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, const wchar_t *const executable_directory)
 {
+#ifndef JAR_FILE_WRAPPED
     const wchar_t *jarfile_path = NULL;
 
     const wchar_t *const path_prefix = remove_file_extension(executable_path);
@@ -175,6 +197,9 @@ static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, con
 
     free((void*)path_prefix);
     return jarfile_path;
+#else
+    return wcsdup(executable_path); /*JAR file is wrapped*/
+#endif
 }
 
 /* ======================================================================== */
@@ -199,6 +224,49 @@ static const BOOL set_current_directory(const wchar_t *const path)
     {
         return SetCurrentDirectoryW(L"\\");
     }
+}
+
+/* ======================================================================== */
+/* Splash screen                                                            */
+/* ======================================================================== */
+
+static BOOL create_splash_screen(const HWND hwnd, const HANDLE splash_image)
+{
+    if (hwnd && splash_image)
+    {
+        RECT rect;
+        SendMessageW(hwnd, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM) splash_image);
+        GetWindowRect(hwnd, &rect);
+        const int x = (GetSystemMetrics(SM_CXSCREEN) - (rect.right - rect.left)) / 2;
+        const int y = (GetSystemMetrics(SM_CYSCREEN) - (rect.bottom - rect.top)) / 2;
+        SetWindowPos(hwnd, HWND_TOP, x, y, 0, 0, SWP_NOSIZE);
+        ShowWindow(hwnd, SW_SHOW);
+        return UpdateWindow(hwnd);
+    }
+    return FALSE;
+}
+
+static BOOL process_window_messages(const HWND hwnd)
+{
+    BOOL result = FALSE;
+    if (hwnd != NULL)
+    {
+        MSG msg = {};
+        for (DWORD k = 0U; k < MAXWORD; ++k)
+        {
+            if (PeekMessageW(&msg, hwnd, 0U, 0U, PM_REMOVE))
+            {
+                result = TRUE;
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+            else
+            {
+                break; /*no more messages!*/
+            }
+        }
+    }
+    return result;
 }
 
 /* ======================================================================== */
@@ -237,31 +305,78 @@ while(0)
 while(0)
 
 /* ======================================================================== */
+/* Utilities                                                                */
+/* ======================================================================== */
+
+static void close_handle(HANDLE *const handle)
+{
+    if(*handle)
+    {
+        CloseHandle(*handle);
+        *handle = NULL;
+    }
+}
+
+static void delete_object(HGDIOBJ *const handle)
+{
+    if(*handle)
+    {
+        DeleteObject(*handle);
+        *handle = NULL;
+    }
+}
+
+static void destroy_window(HWND *const hwnd)
+{
+    if(*hwnd)
+    {
+        DestroyWindow(*hwnd);
+        *hwnd = NULL;
+    }
+}
+
+/* ======================================================================== */
 /* MAIN                                                                     */
 /* ======================================================================== */
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-    int exit_code = -1;
+    int result = -1;
     const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *command_line = NULL;
-    STARTUPINFOW startup_info;
+    HGDIOBJ splash_image = NULL;
+    DWORD exit_code = 0U;
     PROCESS_INFORMATION process_info;
+    STARTUPINFOW startup_info;
 
     // Initialize
     SecureZeroMemory(&startup_info, sizeof(STARTUPINFOW));
     SecureZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
 
+    // Create the window
+    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+
+    // Show the splash screen
+#ifdef ENABLE_SPLASH
+    if(splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_SPLASH_BITMAP), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
+    {
+        if(create_splash_screen(hwnd, splash_image))
+        {
+            process_window_messages(hwnd);
+        }
+    }
+#endif
+
     // Find executable path
     if(!(executable_path = get_executable_path()))
     {
-        show_message(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"The path of the executable could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the executable could not be determined!");
         goto cleanup;
     }
 
     // Find executable directory
     if(!(executable_directory = get_executable_directory(executable_path)))
     {
-        show_message(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"The executable directory could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The executable directory could not be determined!");
         goto cleanup;
     }
 
@@ -274,28 +389,30 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Find the JAR file path
     if(!(jarfile_path = get_jarfile_path(executable_path, executable_directory)))
     {
-        show_message(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"The path of the JAR file could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the JAR file could not be determined!");
         goto cleanup;
     }
 
-    // Find the Java runtime path
+    // Find the Java runtime executable path
     if(!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, JRE_RELATIVE_PATH)))
     {
-        show_message(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"The path of the Java runtime could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the Java runtime could not be determined!");
         goto cleanup;
     }
 
-    // Does JAR file exist?
+    // Does the JAR file exist?
+#ifndef JAR_FILE_WRAPPED
     if(!file_exists(jarfile_path))
     {
-        show_message_format(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"JAR not found", L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"JAR not found", L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
         goto cleanup;
     }
+#endif
 
-    // Does the Java runtime exist?
+    // Does the Java runtime executable exist?
     if(!file_exists(java_runtime_path))
     {
-        show_message_format(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"Java not found", L"The required Java runtime could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"Java not found", L"The required Java runtime could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
         goto cleanup;
     }
 
@@ -303,9 +420,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     command_line = NOT_EMPTY(pCmdLine) ? awprintf(L"\"%ls\" -jar \"%ls\" %ls", java_runtime_path, jarfile_path, pCmdLine) : awprintf(L"\"%ls\" -jar \"%ls\"", java_runtime_path, jarfile_path);
     if(!command_line)
     {
-        show_message(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"The Java command-line could not be generated!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The Java command-line could not be generated!");
         goto cleanup;
     }
+
+    // Process pending window messages
+#ifdef ENABLE_SPLASH
+    process_window_messages(hwnd);
+#endif
 
     // Now actually start the process!
     if(!CreateProcessW(NULL, (LPWSTR)command_line, NULL, NULL, FALSE, 0U, NULL, executable_directory, &startup_info, &process_info))
@@ -313,27 +435,52 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         const wchar_t *const error_text = describe_system_error(GetLastError());
         if(error_text)
         {
-            show_message_format(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"Failed to create the Java process:\n\n%ls\n\n\n%ls", command_line, error_text);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"Failed to create the Java process:\n\n%ls\n\n\n%ls", command_line, error_text);
             free((void*)error_text);
         }
         else
         {
-            show_message_format(NULL, MB_ICONERROR | MB_SYSTEMMODAL, L"System Error", L"Failed to create the Java process:\n\n%ls", command_line);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"Failed to create the Java process:\n\n%ls", command_line);
         }
         goto cleanup;
     }
 
+    // Process pending window messages
+#ifdef ENABLE_SPLASH
+    process_window_messages(hwnd);
+#ifdef WAIT_FOR_INPUT_IDLE
+    for (DWORD t = 0U; t < SPLASH_SCREEN_TIMEOUT; ++t)
+    {
+        if (WaitForInputIdle(process_info.hProcess, 1000U) != WAIT_TIMEOUT)
+        {
+            break; /*child-process is ready!*/
+        }
+        if (WaitForSingleObject(process_info.hProcess, 1U) != WAIT_TIMEOUT)
+        {
+            break; /*child process terminated!*/
+        }
+        process_window_messages(hwnd);
+    }
+#endif
+    destroy_window(&hwnd);
+#endif
+
+    // Wait for process to exit
+    WaitForSingleObject(process_info.hProcess, INFINITE);
+
+    // Get the exit code
+    if(GetExitCodeProcess(process_info.hProcess, &exit_code))
+    {
+        result = (int) exit_code;
+    }
+
 cleanup:
 
-    if(process_info.hThread)
-    {
-        CloseHandle(process_info.hThread);
-    }
+    close_handle(&process_info.hThread);
+    close_handle(&process_info.hProcess);
 
-    if(process_info.hProcess)
-    {
-        CloseHandle(process_info.hProcess);
-    }
+    destroy_window(&hwnd);
+    delete_object(splash_image);
 
     free((void*)command_line);
     free((void*)java_runtime_path);
@@ -341,5 +488,5 @@ cleanup:
     free((void*)executable_directory);
     free((void*)executable_path);
 
-    return exit_code;
+    return result;
 }
