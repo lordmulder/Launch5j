@@ -284,7 +284,7 @@ static BOOL process_window_messages(const HWND hwnd)
 
 typedef struct
 {
-    DWORD process_id;
+    const DWORD process_id;
     HWND hwnd;
 }
 find_window_t;
@@ -307,11 +307,9 @@ static BOOL CALLBACK enum_windows_callback(const HWND hwnd, const LPARAM lparam)
 
 static HWND find_window_by_process_id(const DWORD process_id)
 {
-    find_window_t find_window_data;
-    find_window_data.process_id = process_id;
-    find_window_data.hwnd = NULL;
-    EnumWindows(enum_windows_callback, (LONG_PTR)&find_window_data);
-    return find_window_data.hwnd;
+    find_window_t find_window = { process_id, NULL };
+    EnumWindows(enum_windows_callback, (LONG_PTR)&find_window);
+    return find_window.hwnd;
 }
 
 /* ======================================================================== */
@@ -533,9 +531,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     destroy_window(&hwnd);
 #endif
 
-    // Wait for process to exit, then get exit code
+    // Wait for process to exit, then get the exit code
 #if STAY_ALIVE
-    if(WaitForSingleObject(process_info.hProcess, INFINITE) == WAIT_OBJECT_0)
+    if(signaled_or_failed(WaitForSingleObject(process_info.hProcess, INFINITE)))
     {
         DWORD exit_code = 0U;
         if(GetExitCodeProcess(process_info.hProcess, &exit_code))
