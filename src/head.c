@@ -61,6 +61,12 @@ static const ULONGLONG JAVA_MINIMUM_VERSION = 0x000B000000000000ull;
 static const ULONGLONG JAVA_MINIMUM_VERSION = 0x0008000000000000ull;
 #endif
 
+// Version
+static const DWORD REQUIRED_VERSION[] =
+{
+    (JAVA_MINIMUM_VERSION >> 48) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 32) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 16) & 0xFFFF, JAVA_MINIMUM_VERSION & 0xFFFF
+};
+
 /* ======================================================================== */
 /* String routines                                                          */
 /* ======================================================================== */
@@ -737,6 +743,25 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     return result;
 }
 
+static void show_jre_download_notice(const HWND hwnd)
+{
+    wchar_t *const version_str = (REQUIRED_VERSION[3U] != 0U)
+        ? awprintf(L"%u.%u.%u_%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U], REQUIRED_VERSION[2U], REQUIRED_VERSION[3U])
+        : ((REQUIRED_VERSION[2U] != 0U) 
+            ? awprintf(L"%u.%u.%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U], REQUIRED_VERSION[2U])
+            : awprintf(L"%u.%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U]));
+    if(version_str)
+    {
+        if (show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, L"JRE not found",
+            L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
+            L"We recommend downloading the OpenJDK runtime here:\n%ls", version_str, JRE_DOWNLOAD_LINK) == IDOK)
+        {
+            ShellExecuteW(hwnd, NULL, JRE_DOWNLOAD_LINK, NULL, NULL, SW_SHOW);
+        }
+        free(version_str);
+    }
+}
+
 /* ======================================================================== */
 /* Utilities                                                                */
 /* ======================================================================== */
@@ -839,12 +864,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     if (!(java_runtime_path = detect_java_runtime()))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"JRE not found", L"Java Runtime Environment (JRE) could not be found!");
-        if(show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, L"JRE not found",
-            L"This application requires the Java Runtime Environment, version 8.0 (1.8.0) or a compatible newer version.\n\n"
-            L"We recommend downloading the OpenJDK runtime here:\n%ls", JRE_DOWNLOAD_LINK) == IDOK)
-        {
-            ShellExecuteW(hwnd, NULL, JRE_DOWNLOAD_LINK, NULL, NULL, SW_SHOW);
-        }
+        show_jre_download_notice(hwnd);
         goto cleanup;
     }
     show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"java_runtime_path Error", java_runtime_path);

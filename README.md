@@ -13,7 +13,7 @@ There currently are two different ways to use Launch5j with your application cod
 
 * ***Use the launcher executable with a separate JAR file***  
   
-  Simply put the launcher executable (`launch5j.exe`) and your JAR file into the same directory. Launch5j will automatically detect the path of the JAR file based on the location of the executable file. More specifically, Launch5j detects the full path of the executable file and then replaces the `.exe` file extension with a `.jar` file extension. You can rename the `launch5j.exe` executable to whatever you prefer.
+  Simply put the launcher executable (`launch5j.exe`) and your JAR file into the same directory. Launch5j will automatically detect the path of the JAR file based on the location of the executable file. More specifically, Launch5j detects the full path of the executable file and then replaces the `.exe` file extension with a `.jar` file extension. Of course, you can rename the `launch5j.exe` executable to whatever you prefer.
 
 * ***Combine the launcher executable and the JAR file (“wrapping”)***  
 
