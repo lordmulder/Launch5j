@@ -28,12 +28,6 @@
 // Resources
 #include "resource.h"
 
-// Const
-static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
-static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
-static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
-static const ULONGLONG JAVA_MINIMUM_VERSION = 0x0008000000000000ull;
-
 // Options
 #ifndef ENABLE_SPLASH
 #define ENABLE_SPLASH 1
@@ -52,6 +46,19 @@ static const ULONGLONG JAVA_MINIMUM_VERSION = 0x0008000000000000ull;
 #endif
 #ifndef PREFER_X64
 #define PREFER_X64 1
+#endif
+#ifndef REQUIRE_JAVA11
+#define REQUIRE_JAVA11 0
+#endif
+
+// Const
+static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
+static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
+static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
+#if REQUIRE_JAVA11
+static const ULONGLONG JAVA_MINIMUM_VERSION = 0x000B000000000000ull;
+#else
+static const ULONGLONG JAVA_MINIMUM_VERSION = 0x0008000000000000ull;
 #endif
 
 /* ======================================================================== */
