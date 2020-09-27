@@ -29,14 +29,22 @@ resources: init
 	windres -o obj/splash_screen.o res/splash_screen.rc
 
 headers: init resources
-	$(CC) $(CFLAGS) -o bin/head.exe                         -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
-	$(CC) $(CFLAGS) -o bin/head_nosplash.exe                -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
-	$(CC) $(CFLAGS) -o bin/head_nowait.exe                  -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
-	$(CC) $(CFLAGS) -o bin/head_nowait_nosplash.exe         -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
-	$(CC) $(CFLAGS) -o bin/head_wrapped.exe                 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
-	$(CC) $(CFLAGS) -o bin/head_wrapped_nosplash.exe        -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
-	$(CC) $(CFLAGS) -o bin/head_wrapped_nowait.exe          -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
-	$(CC) $(CFLAGS) -o bin/head_wrapped_nowait_nosplash.exe -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head.exe                                  -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_nosplash.exe                         -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_nowait.exe                           -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_nowait_nosplash.exe                  -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_wrapped.exe                          -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_wrapped_nosplash.exe                 -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_wrapped_nowait.exe                   -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_wrapped_nowait_nosplash.exe          -DDETECT_REGISTRY=0 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_registry.exe                         -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_registry_nosplash.exe                -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_registry_nowait.exe                  -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_registry_nowait_nosplash.exe         -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=0 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_registry_wrapped.exe                 -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_registry_wrapped_nosplash.exe        -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=1 -DENABLE_SPLASH=0 src/head.c obj/icon.o
+	$(CC) $(CFLAGS) -o bin/head_registry_wrapped_nowait.exe          -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=1 src/head.c obj/icon.o obj/splash_screen.o
+	$(CC) $(CFLAGS) -o bin/head_registry_wrapped_nowait_nosplash.exe -DDETECT_REGISTRY=1 -DJAR_FILE_WRAPPED=1 -DSTAY_ALIVE=0 -DENABLE_SPLASH=0 src/head.c obj/icon.o
 	strip bin/head.exe
 	strip bin/head_nosplash.exe
 	strip bin/head_nowait.exe
@@ -45,6 +53,14 @@ headers: init resources
 	strip bin/head_wrapped_nosplash.exe
 	strip bin/head_wrapped_nowait.exe
 	strip bin/head_wrapped_nowait_nosplash.exe
+	strip bin/head_registry.exe
+	strip bin/head_registry_nosplash.exe
+	strip bin/head_registry_nowait.exe
+	strip bin/head_registry_nowait_nosplash.exe
+	strip bin/head_registry_wrapped.exe
+	strip bin/head_registry_wrapped_nosplash.exe
+	strip bin/head_registry_wrapped_nowait.exe
+	strip bin/head_registry_wrapped_nowait_nosplash.exe
 
 clean: init
 	rm -f bin/*.exe
