@@ -1,7 +1,7 @@
 ![Launch5j](etc/logo.png)  
 
 **Java JAR wrapper for creating Windows native executables  
-created by LoRd_MuldeR &lt;<mulder2@gme.de>&gt;**
+created by LoRd_MuldeR &lt;<mulder2@gmx.de>&gt;**
 
 # Introduction
 
@@ -20,6 +20,13 @@ There currently are two different ways to use Launch5j with your application cod
   In order to combine the launcher executable (`launch5j.wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following *copy* command-line in the terminal:
 
       copy /B launch5j.wrapped.exe + my_program.jar my_program.exe
+
+  If you are building you application with Apache Ant, consider using the `concat` task like this:
+  
+      <concat destfile="my_program.exe" binary="true">
+         <fileset file="launch5j.wrapped.exe"/>
+         <fileset file="my_program.jar"/>
+      </concat>
 
   The resulting `my_program.exe` will be fully self-contained and is the only file you'll need to ship.
 
@@ -48,8 +55,27 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
-It is *not* necessary (though possible) to re-build the executable files for that purpose. Instead, you can use the excellent **Resource Hacker&trade;** utility to “edit” the pre-compiled executable files as needed:  
-<http://www.angusj.com/resourcehacker/>
+It is *not* necessary (though possible) to re-build the executable files for that purpose. Instead, you can use the excellent [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/) utility to “edit” the pre-compiled executable files and *replace* resources as needed:  
+
+![reshack](etc/reshacker-example.png)
+
+# Build instructions
+
+In order to build Launch5j from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
+
+Probably the most simple way to set up the required build environment is by installing the [**MSYS2**](https://www.msys2.org/) distribution, which includes *GCC* (Mingw-w64) as well as all the required build tools, such as *Bash* and *GNU make*.
+
+Please make sure that the essential development tools and the MinGW-w64 toolchains are installed:
+
+    $ pacman -S base-devel
+    $ pacman -S mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain
+
+Once the build environment has been set up, just run the provided Makefile:
+
+    $ cd /path/to/launch5j
+    $ make
+
+*Note:* In order to create 32-Bit or 64-Bit binaries, use the `mingw32` or `mingw64` sub-system of MSYS2, respectively.
 
 # Acknowledgment
 
