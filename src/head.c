@@ -29,49 +29,58 @@
 #include "resource.h"
 
 // Options
-#ifndef ENABLE_SPLASH
-#define ENABLE_SPLASH 1
-#endif
 #ifndef JAR_FILE_WRAPPED
 #define JAR_FILE_WRAPPED 0
-#endif
-#ifndef WAIT_FOR_WINDOW
-#define WAIT_FOR_WINDOW 1
-#endif
-#ifndef STAY_ALIVE
-#define STAY_ALIVE 1
 #endif
 #ifndef DETECT_REGISTRY
 #define DETECT_REGISTRY 0
 #endif
-#ifndef PREFER_X64
-#define PREFER_X64 1
+#ifndef REQUIRE_JAVA
+#define REQUIRE_JAVA 8
 #endif
-#ifndef REQUIRE_JAVA11
-#define REQUIRE_JAVA11 0
+#ifndef REQUIRE_BITNESS
+#define REQUIRE_BITNESS 0
+#endif
+#ifndef ENABLE_SPLASH
+#define ENABLE_SPLASH 1
+#endif
+#ifndef STAY_ALIVE
+#define STAY_ALIVE 1
+#endif
+#ifndef WAIT_FOR_WINDOW
+#define WAIT_FOR_WINDOW 1
+#endif
+
+// Sanity check
+#if (REQUIRE_JAVA < 5) || (REQUIRE_JAVA > 255)
+#error Invalid REQUIRE_JAVA value!
+#endif
+#if (REQUIRE_BITNESS != 0) && (REQUIRE_BITNESS != 32) && (REQUIRE_BITNESS != 64)
+#error Invalid REQUIRE_BITNESS value!
+#endif
+
+// Dependant
+#if (REQUIRE_BITNESS == 64)
+#define REQUIRE_BITNESS_CPUARCH "x64"
+#else
+#define REQUIRE_BITNESS_CPUARCH "x86"
 #endif
 
 // Const
 static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
 static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
-#if REQUIRE_JAVA11
-static const ULONGLONG JAVA_MINIMUM_VERSION = 0x000B000000000000ull;
-#else
-static const ULONGLONG JAVA_MINIMUM_VERSION = 0x0008000000000000ull;
-#endif
-
-// Version
-static const DWORD REQUIRED_VERSION[] =
-{
-    (JAVA_MINIMUM_VERSION >> 48) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 32) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 16) & 0xFFFF, JAVA_MINIMUM_VERSION & 0xFFFF
-};
+static const ULONGLONG JAVA_MINIMUM_VERSION = ((ULONGLONG)(REQUIRE_JAVA)) << 48;
 
 /* ======================================================================== */
 /* String routines                                                          */
 /* ======================================================================== */
 
+#define XSTR(S) STR(S)
+#define STR(S) #S
+
 #define NOT_EMPTY(STR) ((STR) && ((STR)[0U]))
+
 #define SET_STRING(DST,SRC) do \
 { \
     if((DST)) { free((void*)(DST)); } \
@@ -457,7 +466,7 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
         wchar_t *const temp = wcsdup(version_str);
         if (temp)
         {
-            static const wchar_t *const delimiters = L".,_";
+            static const wchar_t *const delimiters = L".,_+";
             BOOL first_token = TRUE;
             const wchar_t *token = wcstok(temp, delimiters);
             while (token)
@@ -571,18 +580,14 @@ static const wchar_t *detect_java_runtime_loop(const BOOL flag_x64)
 static const wchar_t *detect_java_runtime(void)
 {
     const wchar_t *java_runtime;
-#if PREFER_X64
+#if (REQUIRE_BITNESS != 32)
     if(java_runtime = running_on_64bit() ? detect_java_runtime_loop(TRUE) : NULL)
     {
         return java_runtime;
     }
 #endif
+#if (REQUIRE_BITNESS != 64)
     if(java_runtime = detect_java_runtime_loop(FALSE))
-    {
-        return java_runtime;
-    }
-#if !PREFER_X64
-    if(java_runtime = running_on_64bit() ? detect_java_runtime_loop(TRUE) : NULL)
     {
         return java_runtime;
     }
@@ -745,6 +750,11 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
 
 static void show_jre_download_notice(const HWND hwnd)
 {
+    const DWORD REQUIRED_VERSION[] =
+    {
+        (JAVA_MINIMUM_VERSION >> 48) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 32) & 0xFFFF,
+        (JAVA_MINIMUM_VERSION >> 16) & 0xFFFF, JAVA_MINIMUM_VERSION & 0xFFFF
+    };
     wchar_t *const version_str = (REQUIRED_VERSION[3U] != 0U)
         ? awprintf(L"%u.%u.%u_%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U], REQUIRED_VERSION[2U], REQUIRED_VERSION[3U])
         : ((REQUIRED_VERSION[2U] != 0U) 
@@ -754,6 +764,9 @@ static void show_jre_download_notice(const HWND hwnd)
     {
         if (show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, L"JRE not found",
             L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
+#if (REQUIRE_BITNESS != 0)
+            L"Only the " XSTR(REQUIRE_BITNESS) "-Bit (" REQUIRE_BITNESS_CPUARCH ") version of the JRE is supported!\n\n"
+#endif
             L"We recommend downloading the OpenJDK runtime here:\n%ls", version_str, JRE_DOWNLOAD_LINK) == IDOK)
         {
             ShellExecuteW(hwnd, NULL, JRE_DOWNLOAD_LINK, NULL, NULL, SW_SHOW);
