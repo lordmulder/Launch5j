@@ -286,7 +286,7 @@ static wchar_t *load_string(const HINSTANCE hinstance, const UINT id)
     {
         if (buffer = (wchar_t*) malloc(sizeof(wchar_t) * (str_len + 1U)))
         {
-            if(LoadStringW(hinstance, id, buffer, str_len) > 0)
+            if(LoadStringW(hinstance, id, buffer, str_len + 1U) > 0)
             {
                 return wcstrim(buffer);
             }
