@@ -12,7 +12,10 @@
 /************************************************************/
 
 // ICON
-#define ID_APP_ICON      1
+#define ID_ICON_MAIN 1
 
 // BITMAP
-#define ID_SPLASH_BITMAP 1
+#define ID_BITMAP_SPLASH 1
+
+// STRINGS
+#define ID_STR_JVMARGS 1

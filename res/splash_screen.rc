@@ -11,7 +11,14 @@
 /* https://sourceforge.net/p/launch4j/                      */
 /************************************************************/
 
+#define APSTUDIO_READONLY_SYMBOLS
+#include "WinResrc.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
 #include "../src/resource.h"
 
-// BITMAP
-ID_SPLASH_BITMAP BITMAP "splash_screen.bmp"
+/////////////////////////////////////////////////////////////////////////////
+// Bitmaps
+/////////////////////////////////////////////////////////////////////////////
+
+ID_BITMAP_SPLASH BITMAP "assets/splash_screen.bmp"

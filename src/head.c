@@ -142,6 +142,35 @@ static wchar_t *wcsndup (const wchar_t *const str, const size_t n)
     return result;
 }
 
+static wchar_t *wcstrim(wchar_t *const str)
+{
+    if (NOT_EMPTY(str))
+    {
+        size_t pos = 0U, out = 0U;
+        while (str[pos] && iswspace(str[pos]))
+        {
+            ++pos;
+        }
+        if (pos > 0U)
+        {
+            while(str[pos])
+            {
+                str[out++] = str[pos++];
+            }
+            str[out] = L'\0';
+        }
+        else
+        {
+            for (; str[out]; ++out);
+        }
+        while ((out > 0U) && (iswspace(str[out-1U])))
+        {
+            str[--out] = L'\0';
+        }
+    }
+    return str;
+}
+
 /* ======================================================================== */
 /* System information                                                       */
 /* ======================================================================== */
@@ -193,7 +222,7 @@ static wchar_t *get_directory_part(const wchar_t *const path)
     return wcsdup(L".");
 }
 
-static wchar_t *remove_file_extension(const wchar_t *const path)
+static wchar_t *get_path_without_suffix(const wchar_t *const path)
 {
     size_t lastsep = SIZE_MAX;
     size_t lastdot = SIZE_MAX;
@@ -221,7 +250,7 @@ static wchar_t *remove_file_extension(const wchar_t *const path)
     return wcsdup(path);
 }
 
-static void trim_trailing_separator(wchar_t *const path)
+static wchar_t * trim_trailing_separator(wchar_t *const path)
 {
     if(NOT_EMPTY(path))
     {
@@ -231,6 +260,7 @@ static void trim_trailing_separator(wchar_t *const path)
             path[--len] = L'\0';
         }
     }
+    return path;
 }
 
 static BOOL file_exists(const wchar_t *const filename) {
@@ -240,6 +270,28 @@ static BOOL file_exists(const wchar_t *const filename) {
         return S_ISDIR(buffer.st_mode) ? FALSE : TRUE;
     }
     return FALSE;
+}
+
+/* ======================================================================== */
+/* Resource routines                                                        */
+/* ======================================================================== */
+
+static wchar_t *load_string(const HINSTANCE hinstance, const UINT id)
+{
+    wchar_t *buffer;
+    const int str_len = LoadStringW(hinstance, id, (PWCHAR)&buffer, 0);
+    if(str_len > 0)
+    {
+        if (buffer = (wchar_t*) malloc(sizeof(wchar_t) * (str_len + 1U)))
+        {
+            if(LoadStringW(hinstance, id, buffer, str_len) > 0)
+            {
+                return wcstrim(buffer);
+            }
+            free(buffer);
+        }
+    }
+    return NULL;
 }
 
 /* ======================================================================== */
@@ -374,7 +426,8 @@ static const wchar_t *get_executable_path(void)
 {
     if (_wpgmptr && _wpgmptr[0U])
     {
-        return wcsdup(_wpgmptr);
+        wchar_t *const executable_path = wcsdup(_wpgmptr);
+        return wcstrim(executable_path);
     }
     return NULL;
 }
@@ -398,7 +451,7 @@ static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, con
 #else
     const wchar_t *jarfile_path = NULL;
 
-    const wchar_t *const path_prefix = remove_file_extension(executable_path);
+    const wchar_t *const path_prefix = get_path_without_suffix(executable_path);
     if (NOT_EMPTY(path_prefix))
     {
         const size_t len = wcslen(path_prefix);
@@ -502,7 +555,7 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
 
     BOOL is_valid = FALSE;
     wchar_t *const java_home_path = reg_read_string(root_key, full_reg_path, L"JavaHome", flag_x64);
-    trim_trailing_separator(java_home_path);
+    trim_trailing_separator(wcstrim(java_home_path));
     if (NOT_EMPTY(java_home_path))
     {
         for (size_t i = 0U; REL_PATHS[i]; ++i)
@@ -813,7 +866,7 @@ static void destroy_window(HWND *const hwnd)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     int result = -1;
-    const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *command_line = NULL;
+    const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *command_line = NULL;
     HGDIOBJ splash_image = NULL;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
@@ -827,7 +880,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Show the splash screen
 #if ENABLE_SPLASH
-    if (splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_SPLASH_BITMAP), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
+    if (splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
     {
         if (create_splash_screen(hwnd, splash_image))
         {
@@ -880,7 +933,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         show_jre_download_notice(hwnd);
         goto cleanup;
     }
-    show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"java_runtime_path Error", java_runtime_path);
 #else
     if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, JRE_RELATIVE_PATH)))
     {
@@ -894,14 +946,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 #endif
 
+    // Load extra JVM args
+    jvm_extra_args = load_string(hInstance, ID_STR_JVMARGS);
+
     // Build the command-line
-    command_line = NOT_EMPTY(pCmdLine) ? awprintf(L"\"%ls\" -jar \"%ls\" %ls", java_runtime_path, jarfile_path, pCmdLine) : awprintf(L"\"%ls\" -jar \"%ls\"", java_runtime_path, jarfile_path);
+    command_line = (NOT_EMPTY(jvm_extra_args) && (wcscmp(jvm_extra_args, L"?") != 0))
+        ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls" : L"\"%ls\" %ls -jar \"%ls\"", java_runtime_path, jvm_extra_args, jarfile_path, pCmdLine)
+        : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls"     : L"\"%ls\" -jar \"%ls\"",     java_runtime_path, jarfile_path, pCmdLine);
     if (!command_line)
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The Java command-line could not be generated!");
         goto cleanup;
     }
-    show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"command_line Error", command_line);
 
     // Process pending window messages
 #if ENABLE_SPLASH

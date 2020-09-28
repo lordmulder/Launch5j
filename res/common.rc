@@ -1,0 +1,80 @@
+/************************************************************/
+/* Launch5j, by LoRd_MuldeR <MuldeR2@GMX.de>                */
+/* Java JAR wrapper for creating Windows native executables */
+/* https://github.com/lordmulder/                           */
+/*                                                          */
+/* This work has been released under the MIT license.       */
+/* Please see LICENSE.TXT for details!                      */
+/*                                                          */
+/* ACKNOWLEDGEMENT                                          */
+/* This project is partly inspired by the Launch4j project: */
+/* https://sourceforge.net/p/launch4j/                      */
+/************************************************************/
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "WinResrc.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#include "../src/resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+// Icons
+/////////////////////////////////////////////////////////////////////////////
+
+ID_ICON_MAIN ICON "assets/icon.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+// Strings
+/////////////////////////////////////////////////////////////////////////////
+
+STRINGTABLE
+BEGIN
+    ID_STR_JVMARGS L"?" /*-Xmx512m*/
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// Version
+/////////////////////////////////////////////////////////////////////////////
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    0,2,0,0
+ PRODUCTVERSION 0,2,0,0
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x3L
+#else
+ FILEFLAGS 0x2L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "ProductName", "Launch5j"
+            VALUE "FileDescription", "Launch5j"
+            VALUE "ProductVersion", "0.2.0"
+            VALUE "FileVersion", "0.2.0"
+            VALUE "InternalName", "Launch5j"
+            VALUE "OriginalFilename", "launch5j.exe"
+            VALUE "LegalCopyright", "Created by LoRd_MuldeR <MuldeR2@GMX.de>"
+            VALUE "CompanyName", "Muldersoft"
+            VALUE "LegalTrademarks", "Muldersoft"
+            VALUE "Comments", "This work has been released under the MIT license!"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
