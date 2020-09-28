@@ -56,15 +56,15 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 
 ## Platforms
 
-All of the above Launch5j variants are available as `i586` (32-Bit) and `x86-64` (64-Bit) executables. The `i586` (32-Bit) executables can run on *32-Bit* and *64-Bit* versions of Microsoft&reg; Windows&trade;, whereas the `x86-64` (64-Bit) executables necessarily require a *64-Bit* version of Microsoft&reg; Windows&trade;. Consequently, it is generally recommended to distribute the `i586` (32-Bit) launcher executable with your Java application. Please note that this does **not** restrict the “bitness” of the JRE that can be used. Even the `i586` (32-Bit) launcher executable is perfectly able to detect and launch a *64-Bit* JRE &ndash; if it is available.
+All of the above Launch5j variants are available as `i586` (32-Bit) and `x86-64` (64-Bit) executables. The `i586` (32-Bit) executables can run on *32-Bit* and *64-Bit* versions of Microsoft&reg; Windows&trade;, whereas the `x86-64` (64-Bit) executables require a *64-Bit* version of Microsoft&reg; Windows&trade;. Consequently, it is generally recommended to distribute the `i586` (32-Bit) launcher executable. Please note that this does **not** restrict the “bitness” of the JRE that can be used. Even the `i586` (32-Bit) launcher executable is perfectly able to detect and launch a *64-Bit* JRE &ndash; if it is available.
 
-Launch5j has been tested to work on Windows XP (Service Pack 2), or a compatible newer version.
+*Note:* Launch5j has been tested to work correctly on Windows XP (Service Pack 2), or a compatible newer version.
 
 # Customizations
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
-It is *not* necessary (though possible) to re-build the executable files for that purpose. Instead, you can use the excellent [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/) utility to “edit” the pre-compiled executable files and *replace* resources as needed:  
+It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN Resource Editor**](https://stefansundin.github.io/xn_resource_editor/) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
 
 ![reshack](etc/reshacker-example.png)
 
@@ -78,12 +78,12 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 * **`ID_STR_JVMARGS` (#2)**  
   Specifies *additional* options JVM options to be passed, e.g. `-Xmx2g` or `-Dproperty=value`.  
   See here for a list of available options:  
-  https://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html
+  <https://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html>
 
 * **`ID_STR_CMDARGS` (#3)**  
   Specifies *additional* (fixed) command-line options to be passed to the application.  
 
-*Note:* The default value `"?"` means "nothing" should be passed, because resource strings cannot be empty!
+*Note:* The default value `"?"` is synonymous with “undefined”, because resource strings cannot be empty!
 
 # Build instructions
 
