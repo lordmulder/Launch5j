@@ -803,7 +803,7 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     return result;
 }
 
-static void show_jre_download_notice(const HWND hwnd)
+static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title)
 {
     const DWORD REQUIRED_VERSION[] =
     {
@@ -865,10 +865,13 @@ static void destroy_window(HWND *const hwnd)
 /* MAIN                                                                     */
 /* ======================================================================== */
 
+static wchar_t *const DEFAULT_HEADING = L"Launch5j";
+#define APP_HEADING (AVAILABLE(app_heading) ? app_heading : DEFAULT_HEADING)
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     int result = -1;
-    const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    const wchar_t *app_heading = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
     HGDIOBJ splash_image = NULL;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
@@ -877,8 +880,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     SecureZeroMemory(&startup_info, sizeof(STARTUPINFOW));
     SecureZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
 
+    // Load title
+    app_heading = load_string(hInstance, ID_STR_HEADING);
+
     // Create the window
-    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 
     // Show the splash screen
 #if ENABLE_SPLASH
@@ -894,14 +900,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Find executable path
     if (!(executable_path = get_executable_path()))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the executable could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the executable could not be determined!");
         goto cleanup;
     }
 
     // Find executable directory
     if (!(executable_directory = get_executable_directory(executable_path)))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The executable directory could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The executable directory could not be determined!");
         goto cleanup;
     }
 
@@ -914,7 +920,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Find the JAR file path
     if (!(jarfile_path = get_jarfile_path(executable_path, executable_directory)))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the JAR file could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the JAR file could not be determined!");
         goto cleanup;
     }
 
@@ -922,7 +928,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 #if !JAR_FILE_WRAPPED
     if (!file_exists(jarfile_path))
     {
-        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"JAR not found", L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
         goto cleanup;
     }
 #endif
@@ -931,19 +937,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 #if DETECT_REGISTRY
     if (!(java_runtime_path = detect_java_runtime()))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"JRE not found", L"Java Runtime Environment (JRE) could not be found!");
-        show_jre_download_notice(hwnd);
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Java Runtime Environment (JRE) could not be found!");
+        show_jre_download_notice(hwnd, APP_HEADING);
         goto cleanup;
     }
 #else
     if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, JRE_RELATIVE_PATH)))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The path of the Java runtime could not be determined!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
         goto cleanup;
     }
     if (!file_exists(java_runtime_path))
     {
-        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"JRE not found", L"The required Java runtime could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required Java runtime could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
         goto cleanup;
     }
 #endif
@@ -962,7 +968,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls"     : L"\"%ls\" -jar \"%ls\"",     java_runtime_path,                 jarfile_path, pCmdLine));
     if (!command_line)
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The Java command-line could not be generated!");
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java command-line could not be generated!");
         goto cleanup;
     }
 
@@ -977,12 +983,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         const wchar_t *const error_text = describe_system_error(GetLastError());
         if (error_text)
         {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"Failed to create the Java process:\n\n%ls\n\n\n%ls", command_line, error_text);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%ls\n\n\n%ls", command_line, error_text);
             free((void*)error_text);
         }
         else
         {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"Failed to create the Java process:\n\n%ls", command_line);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%ls", command_line);
         }
         goto cleanup;
     }
@@ -1025,6 +1031,7 @@ cleanup:
     free((void*)jarfile_path);
     free((void*)executable_directory);
     free((void*)executable_path);
+    free((void*)app_heading);
 
     return result;
 }

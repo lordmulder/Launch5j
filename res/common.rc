@@ -37,8 +37,9 @@ ID_ICON_MAIN ICON "assets/icon.ico"
 
 STRINGTABLE
 BEGIN
-    ID_STR_JVMARGS L"?" /*-Xmx512m*/
-    ID_STR_CMDARGS L"?"
+    ID_STR_HEADING L"?" /*custom application title*/
+    ID_STR_JVMARGS L"?" /*additional JVM args*/
+    ID_STR_CMDARGS L"?" /*additional command-line args*/
 END
 
 /////////////////////////////////////////////////////////////////////////////

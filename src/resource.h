@@ -18,5 +18,6 @@
 #define ID_BITMAP_SPLASH 1
 
 // STRINGS
-#define ID_STR_JVMARGS 1
-#define ID_STR_CMDARGS 2
+#define ID_STR_HEADING 1
+#define ID_STR_JVMARGS 2
+#define ID_STR_CMDARGS 3

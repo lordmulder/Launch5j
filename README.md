@@ -72,12 +72,15 @@ It is *not* necessary (though possible) to re-build the executable files for tha
 
 Some options can be configured via the launcher executable's [STRINGTABLE](https://docs.microsoft.com/en-us/windows/win32/menurc/stringtable-resource) resource:
 
-* **`ID_STR_JVMARGS` (#1)**  
+* **`ID_STR_HEADING` (#1)**  
+  Specifies a custom application description that will be used, for example, as title of message boxes.
+
+* **`ID_STR_JVMARGS` (#2)**  
   Specifies *additional* options JVM options to be passed, e.g. `-Xmx2g` or `-Dproperty=value`.  
   See here for a list of available options:  
   https://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html
 
-* **`ID_STR_CMDARGS` (#2)**  
+* **`ID_STR_CMDARGS` (#3)**  
   Specifies *additional* (fixed) command-line options to be passed to the application.  
 
 *Note:* The default value `"?"` means "nothing" should be passed, because resource strings cannot be empty!
