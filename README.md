@@ -17,14 +17,14 @@ There currently are two different ways to use Launch5j with your application cod
 
 * ***Combine the launcher executable and the JAR file (“wrapping”)***  
 
-  In order to combine the launcher executable (`launch5j.wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following *copy* command-line in the terminal:
+  In order to combine the launcher executable (`launch5j_wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following *copy* command-line in the terminal:
 
-      copy /B launch5j.wrapped.exe + my_program.jar my_program.exe
+      copy /B launch5j_wrapped.exe + my_program.jar my_program.exe
 
   If you are building you application with Apache Ant, consider using the `concat` task like this:
   
       <concat destfile="my_program.exe" binary="true">
-         <fileset file="launch5j.wrapped.exe"/>
+         <fileset file="launch5j_wrapped.exe"/>
          <fileset file="my_program.jar"/>
       </concat>
 
@@ -42,14 +42,17 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 * **`registry`**  
   Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `/runtime` path relative to the location of the executable launcher.
 
-* **`java11`**  
-  When detecting the JRE install path from the Windows registry, accepts only JRE version 11 or any newer JRE version; default variant accepts only JRE version 8 (1.8.0) or any newer JRE version.
+* **`java<N>`**  
+  When detecting the JRE install path from the Windows registry, accepts *only* JRE version **N.0** or any newer JRE version; default variant accepts *only* JRE version **8.0** (1.8.0) or any newer JRE version.
 
-* **`nosplash`**  
-  Does **not** display a splash screen while the application is launching; default variant *does* display a splash screen while the application is launching (will be hidden as soon as application window shows up).
+* **`only[32|64]bit`**  
+  When detecting the JRE install path from the Windows registry, accepts *only* 32-Bit (x86) or *only* 64-Bit (x64) JRE versions, respectively; default variant accepts 32-Bit *and* 64-Bit versions with a preference to 64-Bit.
 
 * **`nowait`**  
   Does **not** keep the launcher executable alive while the application is running; default variant keeps the launcher executable alive until the application terminates and then forwards the application's exit code.
+
+* **`nosplash`**  
+  Does **not** display a splash screen while the application is launching; default variant *does* display a splash screen while the application is launching &ndash; will be hidden as soon as application window shows up.
 
 # Customizations
 
