@@ -511,6 +511,30 @@ typedef struct
 }
 java_home_t;
 
+static BOOL is_old_format(const wchar_t *const version_str)
+{
+    BOOL digit_flag = FALSE;
+    size_t pos = 0U;
+    while (version_str[pos] && iswspace(version_str[pos]))
+    {
+       ++pos;
+    }
+    while (version_str[pos] && iswdigit(version_str[pos]))
+    {
+       digit_flag = TRUE;
+       ++pos;
+    }
+    while (version_str[pos] && iswspace(version_str[pos]))
+    {
+       ++pos;
+    }
+    if (digit_flag)
+    {
+        return (version_str[pos] == L'u') || (version_str[pos] == L'U');
+    }
+    return FALSE;
+}
+
 static ULONGLONG parse_java_version(const wchar_t *const version_str)
 {
     ULONGLONG version = 0ULL;
@@ -521,9 +545,9 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
         wchar_t *const temp = wcsdup(version_str);
         if (temp)
         {
-            static const wchar_t *const delimiters = L".,_+";
+            const BOOL old_format = is_old_format(temp);
             BOOL first_token = TRUE;
-            const wchar_t *token = wcstok(temp, delimiters);
+            const wchar_t *token = wcstok(temp, L".uU");
             while (token)
             {
                 const DWORD component = wcstoul(token, NULL, 10);
@@ -531,8 +555,17 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
                 {
                     version = (version << 16) | (component & 0xFFFF);
                     ++level;
+                    if(old_format && (level == 1U))
+                    {
+                        version <<= 16;
+                        ++level;
+                    }
                 }
-                token = wcstok(NULL, delimiters);
+                if (level > 3U)
+                {
+                    break;
+                }
+                token = wcstok(NULL, L"._+");
                 first_token = FALSE;
             }
         }
