@@ -38,6 +38,7 @@ ID_ICON_MAIN ICON "assets/icon.ico"
 STRINGTABLE
 BEGIN
     ID_STR_JVMARGS L"?" /*-Xmx512m*/
+    ID_STR_CMDARGS L"?"
 END
 
 /////////////////////////////////////////////////////////////////////////////

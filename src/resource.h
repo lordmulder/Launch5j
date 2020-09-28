@@ -19,3 +19,4 @@
 
 // STRINGS
 #define ID_STR_JVMARGS 1
+#define ID_STR_CMDARGS 2

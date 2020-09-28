@@ -80,6 +80,7 @@ static const ULONGLONG JAVA_MINIMUM_VERSION = ((ULONGLONG)(REQUIRE_JAVA)) << 48;
 #define STR(S) #S
 
 #define NOT_EMPTY(STR) ((STR) && ((STR)[0U]))
+#define AVAILABLE(OPT) (NOT_EMPTY(OPT) && (wcscmp((OPT), L"?") != 0))
 
 #define SET_STRING(DST,SRC) do \
 { \
@@ -87,6 +88,7 @@ static const ULONGLONG JAVA_MINIMUM_VERSION = ((ULONGLONG)(REQUIRE_JAVA)) << 48;
     (DST) = (SRC); \
 } \
 while(0)
+
 
 static wchar_t *vawprintf(const wchar_t *const fmt, va_list ap)
 {
@@ -866,7 +868,7 @@ static void destroy_window(HWND *const hwnd)
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     int result = -1;
-    const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *command_line = NULL;
+    const wchar_t *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
     HGDIOBJ splash_image = NULL;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
@@ -946,13 +948,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 #endif
 
-    // Load extra JVM args
+    // Load additional options
     jvm_extra_args = load_string(hInstance, ID_STR_JVMARGS);
+    cmd_extra_args = load_string(hInstance, ID_STR_CMDARGS);
 
     // Build the command-line
-    command_line = (NOT_EMPTY(jvm_extra_args) && (wcscmp(jvm_extra_args, L"?") != 0))
-        ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls" : L"\"%ls\" %ls -jar \"%ls\"", java_runtime_path, jvm_extra_args, jarfile_path, pCmdLine)
-        : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls"     : L"\"%ls\" -jar \"%ls\"",     java_runtime_path, jarfile_path, pCmdLine);
+    command_line = AVAILABLE(cmd_extra_args)
+        ? (AVAILABLE(jvm_extra_args)
+            ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, jarfile_path, cmd_extra_args, pCmdLine)
+            : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls %ls"     : L"\"%ls\" -jar \"%ls\" %ls",     java_runtime_path,                 jarfile_path, cmd_extra_args, pCmdLine))
+        : (AVAILABLE(jvm_extra_args)
+            ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls" : L"\"%ls\" %ls -jar \"%ls\"", java_runtime_path, jvm_extra_args, jarfile_path, pCmdLine)
+            : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls"     : L"\"%ls\" -jar \"%ls\"",     java_runtime_path,                 jarfile_path, pCmdLine));
     if (!command_line)
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, L"System Error", L"The Java command-line could not be generated!");
@@ -1011,6 +1018,8 @@ cleanup:
     destroy_window(&hwnd);
     delete_object(&splash_image);
 
+    free((void*)jvm_extra_args);
+    free((void*)cmd_extra_args);
     free((void*)command_line);
     free((void*)java_runtime_path);
     free((void*)jarfile_path);
