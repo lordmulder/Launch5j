@@ -49,8 +49,8 @@ END
 /////////////////////////////////////////////////////////////////////////////
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    0,2,0,0
- PRODUCTVERSION 0,2,0,0
+ FILEVERSION    0,3,0,0
+ PRODUCTVERSION 0,3,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -67,8 +67,8 @@ BEGIN
         BEGIN
             VALUE "ProductName", "Launch5j"
             VALUE "FileDescription", "Launch5j"
-            VALUE "ProductVersion", "0.2.0"
-            VALUE "FileVersion", "0.2.0"
+            VALUE "ProductVersion", "0.3.0"
+            VALUE "FileVersion", "0.3.0"
             VALUE "InternalName", "Launch5j"
             VALUE "OriginalFilename", "launch5j.exe"
             VALUE "LegalCopyright", "Created by LoRd_MuldeR <MuldeR2@GMX.de>"

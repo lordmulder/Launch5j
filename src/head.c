@@ -856,6 +856,8 @@ static BOOL wait_for_process_ready(const HWND hwnd, const HANDLE process_handle,
 /* Message box                                                              */
 /* ======================================================================== */
 
+#define IS_HTTP_URL(STR) (NOT_EMPTY(STR) && ((wcsnicmp((STR), L"http://", 7U) == 0) || (wcsnicmp((STR), L"https://", 8U) == 0)))
+
 static const wchar_t *describe_system_error(const DWORD error_code)
 {
     const wchar_t *error_test = NULL, *buffer = NULL;
@@ -902,7 +904,7 @@ static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd,
             : awprintf(L"%u.%u", req_version_comp[0U], req_version_comp[1U]));
     if(version_str)
     {
-        const wchar_t *const jre_download_ptr = AVAILABLE(jre_download_link) ? jre_download_link : JRE_DOWNLOAD_LINK_DEFAULT;
+        const wchar_t *const jre_download_ptr = IS_HTTP_URL(jre_download_link) ? jre_download_link : JRE_DOWNLOAD_LINK_DEFAULT;
         const int result = (required_bitness == 0U)
             ? show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
                 L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"

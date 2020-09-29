@@ -120,6 +120,8 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
   The Java download URL that will ne suggested, if **no** suitable JRE could be detected on the machine.  
   If not specified, wes suggest downloading OpenJDK as provided by the [AdoptOpenJDK](https://adoptopenjdk.net/) project.
 
+  *Hint:* The URL must begin with a `http://` or `https://` prefix; otherwise the URL will be ignored!
+
   (This option only applies to the “registry” variant of Launch5j)
 
 *Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
