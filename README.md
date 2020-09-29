@@ -42,12 +42,6 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 * **`registry`**  
   Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `/runtime` path relative to the location of the executable launcher.
 
-* **`java<N>`**  
-  When detecting the JRE install path from the Windows registry, accepts *only* JRE version **N.0** or any newer JRE version; default variant accepts *only* JRE version **8.0** (1.8.0) or any newer JRE version.
-
-* **`only[32|64]bit`**  
-  When detecting the JRE install path from the Windows registry, accepts *only* 32-Bit (x86) or *only* 64-Bit (x64) JRE versions, respectively; default variant accepts 32-Bit *and* 64-Bit versions with a preference to 64-Bit.
-
 * **`nowait`**  
   Does **not** keep the launcher executable alive while the application is running; default variant keeps the launcher executable alive until the application terminates and then forwards the application's exit code.
 
@@ -73,17 +67,41 @@ It is ***not*** necessary to re-build the executable files for that purpose. Ins
 Some options can be configured via the launcher executable's [STRINGTABLE](https://docs.microsoft.com/en-us/windows/win32/menurc/stringtable-resource) resource:
 
 * **`ID_STR_HEADING` (#1)**  
-  Specifies a custom application description that will be used, for example, as title of message boxes.
+  Specifies a custom application title that will be used, e.g., as the heading of message boxes.
 
 * **`ID_STR_JVMARGS` (#2)**  
-  Specifies *additional* options JVM options to be passed, e.g. `-Xmx2g` or `-Dproperty=value`.  
+  Specifies *additional* options JVM options to be passed, such as `-Xmx2g` or `-Dproperty=value`.  
   See here for a list of available options:  
   <https://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html>
 
 * **`ID_STR_CMDARGS` (#3)**  
-  Specifies *additional* (fixed) command-line options to be passed to the application.  
+  Specifies *additional* fixed command-line parameters to be passed to the Java application.  
 
-*Note:* The default value `"?"` is synonymous with “undefined”, because resource strings cannot be empty!
+* **`ID_STR_JAVAMIN` (#4)**  
+  Specifies the ***minimum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `11.0.0.0`).  
+  This values is *inclusive*, i.e. the specified JRE version or any newer JRE version will be accepted.  
+  If not specified, then the *default* minimum supported JRE version `8.0.0.0` applies.
+
+  *Hint:* Old-style `1.x.y_z` Java versions  are automatically translated to the new `x.y.z` format!
+
+  (This option only applies to the `registry` variant of Launch5j)
+
+* **`ID_STR_JAVAMAX` (#5)**  
+  Specifies the ***maximum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `12.0.0.0`).  
+  This values is *exclusive*, i.e. only JRE versions *older* than the specified JRE version will be accepted.  
+  If not specified, then there is **no** upper limit on the supported JRE version.
+
+  *Hint:* Old-style `1.x.y.z` Java versions  are automatically translated to the `x.y.z.0` format!
+
+  (This option only applies to the `registry` variant of Launch5j)
+
+* **`ID_STR_BITNESS` (#6)**  
+  Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
+  If not specified, 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
+
+  (This option only applies to the `registry` variant of Launch5j)
+
+*Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
 
 # Build instructions
 
