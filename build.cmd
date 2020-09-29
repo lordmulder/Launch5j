@@ -27,7 +27,7 @@ for %%m in (32,64) do (
 	echo.
 )
 
-echo ALL IS COMPLETED.
+echo ALL IS DONE.
 
 :build_completed
 pause

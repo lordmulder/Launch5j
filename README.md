@@ -58,7 +58,7 @@ All of the above Launch5j variants are available as `i586` (32-Bit) and `x86-64`
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
-It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN Resource Editor**](https://stefansundin.github.io/xn_resource_editor/) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
+It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
 
 ![reshack](etc/reshacker-example.png)
 
@@ -90,16 +90,29 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
   Specifies the ***maximum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `12.0.0.0`).  
   This values is *exclusive*, i.e. only JRE versions *older* than the specified JRE version will be accepted.  
   If not specified, then there is **no** upper limit on the supported JRE version.
-
-  *Hint:* Old-style `1.x.y.z` Java versions  are automatically translated to the `x.y.z.0` format!
-
+  
+  *Hint:* Old-style `1.x.y.z` Java versions are automatically translated to the `x.y.z.0` format!
+  
   (This option only applies to the `registry` variant of Launch5j)
 
 * **`ID_STR_BITNESS` (#6)**  
   Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
   If not specified, 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
-
+  
   (This option only applies to the `registry` variant of Launch5j)
+
+* **`ID_STR_BITNESS` (#6)**  
+  Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
+  If not specified, 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
+  
+  (This option only applies to the `registry` variant of Launch5j)
+
+* **`ID_STR_MUTEXID` (#7)**  
+  Specifies the application ID to be used when creating the [*single-instance*](http://www.bcbjournal.org/articles/vol3/9911/Single-instance_applications.htm) mutex.  
+  The ID **must** be at least 5 characters in length and **should** be a *unique* string for each application!  
+  If not specified, then **no** mutex will be created and thus *multiple* instances will be allowed.
+  
+  *Hint:* If the specified application ID *starts* with an **`@`** character, then Launch5j will **not** show a message box when the application is already running; the **`@`** character is *not* considered a part of the actual ID.
 
 *Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
 

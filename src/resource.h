@@ -24,3 +24,4 @@
 #define ID_STR_JAVAMIN 4
 #define ID_STR_JAVAMAX 5
 #define ID_STR_BITNESS 6
+#define ID_STR_MUTEXID 7

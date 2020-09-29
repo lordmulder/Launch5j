@@ -48,6 +48,7 @@
 // Const
 static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
 static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
+static const size_t MIN_MUTEXID_LENGTH = 5U;
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 
 /* ======================================================================== */
@@ -919,6 +920,47 @@ static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title
 }
 
 /* ======================================================================== */
+/* Single instance                                                          */
+/* ======================================================================== */
+
+static ULONGLONG hash_code(const BYTE *const message, const size_t message_len)
+{
+    ULONGLONG hash = 0xCBF29CE484222325ull;
+    for (size_t iter = 0U; iter < message_len; ++iter)
+    {
+        hash ^= message[iter];
+        hash *= 0x00000100000001B3ull;
+    }
+    return hash;
+}
+
+static BOOL initialize_mutex(HANDLE *const handle, const wchar_t *const mutex_name)
+{
+    static const char *const BUILD_TIME = __DATE__ " " __TIME__;
+
+    const ULONGLONG hashcode_0 = hash_code((const BYTE*)BUILD_TIME, sizeof(wchar_t) * strlen(BUILD_TIME));
+    const ULONGLONG hashcode_1 = hash_code((const BYTE*)mutex_name, sizeof(wchar_t) * wcslen(mutex_name));
+
+    const wchar_t *const mutex_uuid = awprintf(L"l5j.%016llX%016llX", hashcode_0, hashcode_1);
+    if (!mutex_uuid)
+    {
+        return TRUE; /*better safe than sorry*/
+    }
+
+    BOOL result = TRUE;
+    if ((*handle = CreateMutexW(NULL, TRUE, mutex_uuid)) != NULL)
+    {
+        if (GetLastError() == ERROR_ALREADY_EXISTS)
+        {
+            result = FALSE;
+        }
+    }
+
+    free((void*)mutex_uuid);
+    return result;
+}
+
+/* ======================================================================== */
 /* Utilities                                                                */
 /* ======================================================================== */
 
@@ -959,7 +1001,8 @@ static wchar_t *const DEFAULT_HEADING = L"Launch5j";
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     int result = -1;
-    const wchar_t *app_heading = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
     HGDIOBJ splash_image = NULL;
@@ -975,6 +1018,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Create the window
     HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+
+    // Single instance
+    mutex_name = load_string(hInstance, ID_STR_MUTEXID);
+    if (AVAILABLE(mutex_name) && (wcslen(mutex_name) >= MIN_MUTEXID_LENGTH + ((mutex_name[0U] == L'@') ? 0U : 1U)))
+    {
+        if(!initialize_mutex(&mutex_handle, (mutex_name[0U] == L'@') ? mutex_name + 1U : mutex_name))
+        {
+            if(mutex_name[0U] != L'@')
+            {
+                show_message(hwnd, MB_ICONWARNING | MB_TOPMOST, APP_HEADING, L"The application is already running.\n\n"
+                    L"If you see this message even though the application does not appear to be running, try restarting your computer!");
+            }
+            goto cleanup;
+        }
+    }
 
     // Show the splash screen
 #if ENABLE_SPLASH
@@ -1113,6 +1171,7 @@ cleanup:
 
     close_handle(&process_info.hThread);
     close_handle(&process_info.hProcess);
+    close_handle(&mutex_handle);
 
     destroy_window(&hwnd);
     delete_object(&splash_image);
@@ -1124,6 +1183,7 @@ cleanup:
     free((void*)jarfile_path);
     free((void*)executable_directory);
     free((void*)executable_path);
+    free((void*)mutex_name);
     free((void*)app_heading);
 
     return result;
