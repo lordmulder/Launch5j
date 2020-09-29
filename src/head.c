@@ -910,8 +910,8 @@ static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd,
                 version_str, jre_download_ptr)
             : show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
                 L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
-                L"Only the %u-Bit (%ls) version of the JRE is supported!\n\n",
-                L"We recommend downloading the OpenJDK runtime:\n%ls",
+                L"Only the %u-Bit (%ls) version of the JRE is supported!\n\n"
+                L"We recommend downloading the OpenJDK runtime here:\n%ls",
                 version_str, required_bitness, (required_bitness == 64) ? L"x64" : L"x86", jre_download_ptr);
         if (result == IDOK)
         {
