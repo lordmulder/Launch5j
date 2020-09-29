@@ -33,3 +33,4 @@ init:
 resources: init
 	windres -o obj/common.$(CPU_ARCH).o res/common.rc
 	windres -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
+	windres -o obj/registry.$(CPU_ARCH).o res/registry.rc

@@ -38,21 +38,9 @@ public class MakefileGenerator {
         out.println("build: init resources"); 
         for(int wrapped = 0; wrapped < 2; ++wrapped) {
             for(int registry = 0; registry < 2; ++registry) {
-                for(int requireJava = 8; requireJava < 12; ++requireJava) {
-                    if(requireJava == 10) {
-                        continue;
-                    }
-                    for(int requireBitness = 0; requireBitness < 65; requireBitness += 32) {
-                        for(int stayAlive = 1; stayAlive > -1; --stayAlive) {
-                            for(int enableSplash = 1; enableSplash > -1; --enableSplash) {
-                                if((registry == 0) && ((requireJava != 8) || (requireBitness != 0))) {
-                                    continue;
-                                }
-                                out.println(generateCommand(
-                                    filenNames, wrapped, registry, requireJava,
-                                    requireBitness, stayAlive, enableSplash));
-                            }
-                        }
+                for(int stayAlive = 1; stayAlive > -1; --stayAlive) {
+                    for(int enableSplash = 1; enableSplash > -1; --enableSplash) {
+                        out.println(generateCommand(filenNames, wrapped, registry, stayAlive, enableSplash));
                     }
                 }
             }
@@ -95,24 +83,20 @@ public class MakefileGenerator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> filenNames, final int wrapped, final int registry, final int requireJava, final int requireBitness, final int stayAlive, final int enableSplash)
+    private static String generateCommand(final List<String> filenNames, final int wrapped, final int registry, final int stayAlive, final int enableSplash)
     {
         final String fileName = String.format("bin/launch5j_$(CPU_ARCH)%s.exe", 
-                generateNameSuffix(wrapped, registry, requireJava, requireBitness, stayAlive, enableSplash));
+                generateNameSuffix(wrapped, registry, stayAlive, enableSplash));
         final StringBuilder cmdLine = new StringBuilder(String.format(
                 "\t$(CC) $(CFLAGS) "
                     + "-DJAR_FILE_WRAPPED=%d "
                     + "-DDETECT_REGISTRY=%d "
-                    + "-DREQUIRE_JAVA=%-2d "
-                    + "-DREQUIRE_BITNESS=%-2d "
                     + "-DSTAY_ALIVE=%d "
                     + "-DENABLE_SPLASH=%d "
                     + "-o %s "
                     + "src/head.c obj/common.$(CPU_ARCH).o",
                 wrapped,
                 registry,
-                requireJava,
-                requireBitness,
                 stayAlive,
                 enableSplash,
                 fileName));
@@ -120,24 +104,21 @@ public class MakefileGenerator {
         if(enableSplash > 0) {
             append(cmdLine, ' ', "obj/splash_screen.$(CPU_ARCH).o");
         }
+        if(registry > 0) {
+            append(cmdLine, ' ', "obj/registry.$(CPU_ARCH).o");
+        }
         
         filenNames.add(fileName);
         return cmdLine.toString();
     }
 
-    private static String generateNameSuffix(final int wrapped, final int registry, final int requireJava, final int requireBitness, final int stayAlive, final int enableSplash) {
+    private static String generateNameSuffix(final int wrapped, final int registry, final int stayAlive, final int enableSplash) {
         final StringBuilder builder = new StringBuilder();
         if(wrapped > 0) {
             append(builder, '_', "wrapped");
         }
         if(registry > 0) {
             append(builder, '_', "registry");
-        }
-        if(requireJava != 8) {
-            append(builder, '_', String.format("java%d", requireJava));
-        }
-        if(requireBitness != 0) {
-            append(builder, '_', String.format("only%dbit", requireBitness));
         }
         if(stayAlive == 0) {
             append(builder, '_', "nowait");

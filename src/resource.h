@@ -21,3 +21,6 @@
 #define ID_STR_HEADING 1
 #define ID_STR_JVMARGS 2
 #define ID_STR_CMDARGS 3
+#define ID_STR_JAVAMIN 4
+#define ID_STR_JAVAMAX 5
+#define ID_STR_BITNESS 6

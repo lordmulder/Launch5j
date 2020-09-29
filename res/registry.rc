@@ -1,0 +1,37 @@
+/************************************************************/
+/* Launch5j, by LoRd_MuldeR <MuldeR2@GMX.de>                */
+/* Java JAR wrapper for creating Windows native executables */
+/* https://github.com/lordmulder/                           */
+/*                                                          */
+/* This work has been released under the MIT license.       */
+/* Please see LICENSE.TXT for details!                      */
+/*                                                          */
+/* ACKNOWLEDGEMENT                                          */
+/* This project is partly inspired by the Launch4j project: */
+/* https://sourceforge.net/p/launch4j/                      */
+/************************************************************/
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "WinResrc.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#include "../src/resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+// Strings
+/////////////////////////////////////////////////////////////////////////////
+
+STRINGTABLE
+BEGIN
+    ID_STR_JAVAMIN L"?" /*min supported JRE version, in "w.x.y.z" format*/
+    ID_STR_JAVAMAX L"?" /*max supported JRE version, in "w.x.y.z" format*/
+    ID_STR_BITNESS L"?" /*required JRE "bitness", i.e. "32" or "64"*/
+END

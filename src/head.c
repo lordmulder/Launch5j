@@ -35,12 +35,6 @@
 #ifndef DETECT_REGISTRY
 #define DETECT_REGISTRY 0
 #endif
-#ifndef REQUIRE_JAVA
-#define REQUIRE_JAVA 8
-#endif
-#ifndef REQUIRE_BITNESS
-#define REQUIRE_BITNESS 0
-#endif
 #ifndef ENABLE_SPLASH
 #define ENABLE_SPLASH 1
 #endif
@@ -51,26 +45,10 @@
 #define WAIT_FOR_WINDOW 1
 #endif
 
-// Sanity check
-#if (REQUIRE_JAVA < 5) || (REQUIRE_JAVA > 255)
-#error Invalid REQUIRE_JAVA value!
-#endif
-#if (REQUIRE_BITNESS != 0) && (REQUIRE_BITNESS != 32) && (REQUIRE_BITNESS != 64)
-#error Invalid REQUIRE_BITNESS value!
-#endif
-
-// Dependant
-#if (REQUIRE_BITNESS == 64)
-#define REQUIRE_BITNESS_CPUARCH "x64"
-#else
-#define REQUIRE_BITNESS_CPUARCH "x86"
-#endif
-
 // Const
 static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
 static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
-static const ULONGLONG JAVA_MINIMUM_VERSION = ((ULONGLONG)(REQUIRE_JAVA)) << 48;
 
 /* ======================================================================== */
 /* String routines                                                          */
@@ -296,6 +274,18 @@ static wchar_t *load_string(const HINSTANCE hinstance, const UINT id)
     return NULL;
 }
 
+static DWORD load_uint32(const HINSTANCE hinstance, const UINT id, const DWORD fallback)
+{
+    DWORD value = fallback;
+    const wchar_t *const str = load_string(hinstance, id);
+    if(NOT_EMPTY(str))
+    {
+        value = wcstoul(str, NULL, 10);
+    }
+    free((void*)str);
+    return value;
+}
+
 /* ======================================================================== */
 /* Registry routines                                                        */
 /* ======================================================================== */
@@ -504,6 +494,8 @@ static const BOOL set_current_directory(const wchar_t *const path)
 typedef struct
 {
     const BOOL flag_x64;
+    const ULONGLONG required_ver_min;
+    const ULONGLONG required_ver_max;
     const HKEY root_key;
     const wchar_t *const base_reg_path;
     ULONGLONG version;
@@ -614,29 +606,26 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
 
 static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const ULONG_PTR user_data)
 {
+    java_home_t *const context_ptr = (java_home_t*) user_data;
     const ULONGLONG version = parse_java_version(key_name);
-    if(version > JAVA_MINIMUM_VERSION)
+    if ((version >= context_ptr->required_ver_min) && (version < context_ptr->required_ver_max) && (version > context_ptr->version))
     {
-        java_home_t *const ptr = (java_home_t*) user_data;
-        if(version > ptr->version)
+        wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->base_reg_path, key_name);
+        if (full_reg_path)
         {
-            wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", ptr->base_reg_path, key_name);
-            if (full_reg_path)
+            const wchar_t *const java_runtime_path = detect_java_runtime_verify(context_ptr->flag_x64, context_ptr->root_key, full_reg_path);
+            if(java_runtime_path)
             {
-                const wchar_t *const java_runtime_path = detect_java_runtime_verify(ptr->flag_x64, ptr->root_key, full_reg_path);
-                if(java_runtime_path)
-                {
-                    SET_STRING(ptr->runtime_path, java_runtime_path);
-                    ptr->version = version;
-                }
-                free(full_reg_path);
+                SET_STRING(context_ptr->runtime_path, java_runtime_path);
+                context_ptr->version = version;
             }
+            free(full_reg_path);
         }
     }
     return TRUE;
 }
 
-static const wchar_t *detect_java_runtime_loop(const BOOL flag_x64)
+static const wchar_t *detect_java_runtime_loop(const BOOL flag_x64, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
 {
     static const wchar_t *const REG_KEY_PATHS[2U][3U] =
     {
@@ -651,36 +640,68 @@ static const wchar_t *detect_java_runtime_loop(const BOOL flag_x64)
     {
         for (size_t j = 0; REG_KEY_PATHS[i][j]; ++j)
         {
-            java_home_t state = { flag_x64, HKEY_LOCAL_MACHINE, REG_KEY_PATHS[i][j], version, runtime_path };
+            java_home_t state = { flag_x64, required_ver_min, required_ver_max, HKEY_LOCAL_MACHINE, REG_KEY_PATHS[i][j], version, NULL };
             reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEY_PATHS[i][j], flag_x64, detect_java_runtime_callback, (ULONG_PTR)&state);
-            version = state.version;
-            runtime_path = state.runtime_path;
+            if((state.version > version) && state.runtime_path)
+            {
+                version = state.version;
+                SET_STRING(runtime_path, state.runtime_path);
+            }
+            else
+            {
+                free((void*)state.runtime_path);
+            }
         }
-        if ((version > JAVA_MINIMUM_VERSION) && runtime_path)
+        if ((version >= required_ver_min) && (version < required_ver_max) && runtime_path)
         {
             return runtime_path;
         }
     }
 
+    free((void*)runtime_path);
     return NULL;
 }
 
-static const wchar_t *detect_java_runtime(void)
+static const wchar_t *detect_java_runtime(const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
 {
-    const wchar_t *java_runtime;
-#if (REQUIRE_BITNESS != 32)
-    if(java_runtime = running_on_64bit() ? detect_java_runtime_loop(TRUE) : NULL)
+    const wchar_t *java_runtime_path;
+    if (required_bitness != 32U)
     {
-        return java_runtime;
+        if (java_runtime_path = running_on_64bit() ? detect_java_runtime_loop(TRUE, required_ver_min, required_ver_max) : NULL)
+        {
+            return java_runtime_path;
+        }
     }
-#endif
-#if (REQUIRE_BITNESS != 64)
-    if(java_runtime = detect_java_runtime_loop(FALSE))
+    if (required_bitness != 64U)
     {
-        return java_runtime;
+        if(java_runtime_path = detect_java_runtime_loop(FALSE, required_ver_min, required_ver_max))
+        {
+            return java_runtime_path;
+        }
     }
-#endif
     return NULL;
+}
+
+static const ULONGLONG load_java_version(const HINSTANCE hinstance, const UINT id, const ULONGLONG fallback)
+{
+    ULONGLONG value = fallback;
+    const wchar_t *const str = load_string(hinstance, id);
+    if(NOT_EMPTY(str))
+    {
+        const ULONGLONG temp = parse_java_version(str);
+        if(temp >= (5ull << 48))
+        {
+            value = temp;
+        }
+    }
+    free((void*)str);
+    return value;
+}
+
+static DWORD load_java_bitness(const HINSTANCE hinstance, const UINT id)
+{
+    const DWORD value = load_uint32(hinstance, id, 0U);
+    return ((value == 32U) || (value == 64U)) ? value : 0U;
 }
 
 /* ======================================================================== */
@@ -739,14 +760,15 @@ find_window_t;
 
 static BOOL CALLBACK enum_windows_callback(const HWND hwnd, const LPARAM lparam)
 {
-    DWORD process_id = MAXDWORD;
-    find_window_t *const ptr = (find_window_t*) lparam;
+    find_window_t *const context_ptr = (find_window_t*)lparam;
+    const DWORD required_process_id = context_ptr->process_id;
     if(IsWindowVisible(hwnd))
     {
+        DWORD process_id = MAXDWORD;
         GetWindowThreadProcessId(hwnd, &process_id);
-        if(process_id == ptr->process_id)
+        if(process_id == required_process_id)
         {
-            ptr->hwnd = hwnd;
+            context_ptr->hwnd = hwnd;
             return FALSE;
         }
     }
@@ -836,26 +858,30 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     return result;
 }
 
-static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title)
+static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title, const DWORD required_bitness, const ULONGLONG required_ver)
 {
-    const DWORD REQUIRED_VERSION[] =
+    const DWORD req_version_comp[] =
     {
-        (JAVA_MINIMUM_VERSION >> 48) & 0xFFFF, (JAVA_MINIMUM_VERSION >> 32) & 0xFFFF,
-        (JAVA_MINIMUM_VERSION >> 16) & 0xFFFF, JAVA_MINIMUM_VERSION & 0xFFFF
+        (required_ver >> 48) & 0xFFFF, (required_ver >> 32) & 0xFFFF, (required_ver >> 16) & 0xFFFF, required_ver & 0xFFFF
     };
-    wchar_t *const version_str = (REQUIRED_VERSION[3U] != 0U)
-        ? awprintf(L"%u.%u.%u_%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U], REQUIRED_VERSION[2U], REQUIRED_VERSION[3U])
-        : ((REQUIRED_VERSION[2U] != 0U) 
-            ? awprintf(L"%u.%u.%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U], REQUIRED_VERSION[2U])
-            : awprintf(L"%u.%u", REQUIRED_VERSION[0U], REQUIRED_VERSION[1U]));
+    wchar_t *const version_str = (req_version_comp[3U] != 0U)
+        ? awprintf(L"%u.%u.%u_%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U], req_version_comp[3U])
+        : ((req_version_comp[2U] != 0U) 
+            ? awprintf(L"%u.%u.%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U])
+            : awprintf(L"%u.%u", req_version_comp[0U], req_version_comp[1U]));
     if(version_str)
     {
-        if (show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, L"JRE not found",
-            L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
-#if (REQUIRE_BITNESS != 0)
-            L"Only the " XSTR(REQUIRE_BITNESS) "-Bit (" REQUIRE_BITNESS_CPUARCH ") version of the JRE is supported!\n\n"
-#endif
-            L"We recommend downloading the OpenJDK runtime here:\n%ls", version_str, JRE_DOWNLOAD_LINK) == IDOK)
+        const int result = (required_bitness == 0U)
+            ? show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
+                L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
+                L"We recommend downloading the OpenJDK runtime here:\n%ls",
+                version_str, JRE_DOWNLOAD_LINK)
+            : show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
+                L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
+                L"Only the %u-Bit (%ls) version of the JRE is supported!\n\n",
+                L"We recommend downloading the OpenJDK runtime:\n%ls",
+                version_str, required_bitness, (required_bitness == 64) ? L"x64" : L"x86", JRE_DOWNLOAD_LINK);
+        if (result == IDOK)
         {
             ShellExecuteW(hwnd, NULL, JRE_DOWNLOAD_LINK, NULL, NULL, SW_SHOW);
         }
@@ -905,6 +931,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 {
     int result = -1;
     const wchar_t *app_heading = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    DWORD java_required_bitness = 0U;
+    ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
     HGDIOBJ splash_image = NULL;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
@@ -968,10 +996,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Find the Java runtime executable path (possibly from the registry)
 #if DETECT_REGISTRY
-    if (!(java_runtime_path = detect_java_runtime()))
+    java_required_ver_min = load_java_version(hInstance, ID_STR_JAVAMIN, (8ull << 48));
+    java_required_ver_max = load_java_version(hInstance, ID_STR_JAVAMAX, MAXULONGLONG);
+    java_required_bitness = load_java_bitness(hInstance, ID_STR_BITNESS);
+    if (!(java_runtime_path = detect_java_runtime(java_required_bitness, java_required_ver_min, java_required_ver_max)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Java Runtime Environment (JRE) could not be found!");
-        show_jre_download_notice(hwnd, APP_HEADING);
+        show_jre_download_notice(hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
         goto cleanup;
     }
 #else
