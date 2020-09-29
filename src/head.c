@@ -233,13 +233,22 @@ static wchar_t *get_path_without_suffix(const wchar_t *const path)
 
 static wchar_t * trim_trailing_separator(wchar_t *const path)
 {
-    if(NOT_EMPTY(path))
+    if (NOT_EMPTY(path))
     {
         size_t len = wcslen(path);
         while ((len > 0U) && ((path[len-1U] == L'\\') || (path[len-1U] == L'/')))
         {
             path[--len] = L'\0';
         }
+    }
+    return path;
+}
+
+static const wchar_t *skip_leading_separator(const wchar_t *path)
+{
+    if (NOT_EMPTY(path))
+    {
+        for (; (*path) && ((*path == L'\\') || (*path == L'/')); ++path);
     }
     return path;
 }
@@ -1104,7 +1113,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 #else
     jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
-    if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, AVAILABLE(jre_relative_path) ? jre_relative_path: JRE_RELATIVE_PATH_DEFAULT)))
+    if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : JRE_RELATIVE_PATH_DEFAULT)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
         goto cleanup;
