@@ -21,7 +21,9 @@
 #define ID_STR_HEADING 1
 #define ID_STR_JVMARGS 2
 #define ID_STR_CMDARGS 3
-#define ID_STR_JAVAMIN 4
-#define ID_STR_JAVAMAX 5
-#define ID_STR_BITNESS 6
-#define ID_STR_MUTEXID 7
+#define ID_STR_JREPATH 4
+#define ID_STR_MUTEXID 5
+#define ID_STR_JAVAMIN 6
+#define ID_STR_JAVAMAX 7
+#define ID_STR_BITNESS 8
+#define ID_STR_JAVAURL 9

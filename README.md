@@ -77,42 +77,50 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 * **`ID_STR_CMDARGS` (#3)**  
   Specifies *additional* fixed command-line parameters to be passed to the Java application.  
 
-* **`ID_STR_JAVAMIN` (#4)**  
+* **`ID_STR_JREPATH` (#4)**  
+  Specifies the path to the Java runtime (`javaw.exe`) relative to the launcher executable location.
+  If not specified, then the *default* runtime path `runtime\\bin\\javaw.exe` is assumed.
+
+  (This option does **not** apply to the “registry” variant of Launch5j)
+
+* **`ID_STR_MUTEXID` (#5)**  
+  Specifies the application ID to be used when creating the [*single-instance*](http://www.bcbjournal.org/articles/vol3/9911/Single-instance_applications.htm) mutex.  
+  The ID **must** be at least 5 characters in length and **should** be a *unique* string for each application!  
+  If not specified, then **no** mutex will be created and thus *multiple* instances will be allowed.
+  
+  *Hint:* If the specified application ID *starts* with an **`@`** character, then Launch5j will **not** show a message box when the application is already running; the **`@`** character is *not* considered a part of the actual ID.
+
+  (This option does **not** apply to the “nowait” variant of Launch5j)
+
+* **`ID_STR_JAVAMIN` (#6)**  
   Specifies the ***minimum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `11.0.0.0`).  
   This values is *inclusive*, i.e. the specified JRE version or any newer JRE version will be accepted.  
   If not specified, then the *default* minimum supported JRE version `8.0.0.0` applies.
 
   *Hint:* Old-style `1.x.y_z` Java versions  are automatically translated to the new `x.y.z` format!
 
-  (This option only applies to the `registry` variant of Launch5j)
+  (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_JAVAMAX` (#5)**  
+* **`ID_STR_JAVAMAX` (#7)**  
   Specifies the ***maximum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `12.0.0.0`).  
   This values is *exclusive*, i.e. only JRE versions *older* than the specified JRE version will be accepted.  
   If not specified, then there is **no** upper limit on the supported JRE version.
   
   *Hint:* Old-style `1.x.y.z` Java versions are automatically translated to the `x.y.z.0` format!
   
-  (This option only applies to the `registry` variant of Launch5j)
+  (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_BITNESS` (#6)**  
+* **`ID_STR_BITNESS` (#8)**  
   Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
-  If not specified, 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
+  If not specified, then 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
   
-  (This option only applies to the `registry` variant of Launch5j)
+  (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_BITNESS` (#6)**  
-  Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
-  If not specified, 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
-  
-  (This option only applies to the `registry` variant of Launch5j)
+* **`ID_STR_JAVAURL` (#9)**  
+  The Java download URL that will ne suggested, if **no** suitable JRE could be detected on the machine.  
+  If not specified, wes suggest downloading OpenJDK as provided by the [AdoptOpenJDK](https://adoptopenjdk.net/) project.
 
-* **`ID_STR_MUTEXID` (#7)**  
-  Specifies the application ID to be used when creating the [*single-instance*](http://www.bcbjournal.org/articles/vol3/9911/Single-instance_applications.htm) mutex.  
-  The ID **must** be at least 5 characters in length and **should** be a *unique* string for each application!  
-  If not specified, then **no** mutex will be created and thus *multiple* instances will be allowed.
-  
-  *Hint:* If the specified application ID *starts* with an **`@`** character, then Launch5j will **not** show a message box when the application is already running; the **`@`** character is *not* considered a part of the actual ID.
+  (This option only applies to the “registry” variant of Launch5j)
 
 *Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
 
@@ -161,3 +169,6 @@ This work has been released under the MIT license:
     COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
     IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+[&#8718;](https://www.youtube.com/watch?v=EfbbjY9MlQs)

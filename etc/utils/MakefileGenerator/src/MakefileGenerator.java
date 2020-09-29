@@ -40,7 +40,8 @@ public class MakefileGenerator {
             for(int registry = 0; registry < 2; ++registry) {
                 for(int stayAlive = 1; stayAlive > -1; --stayAlive) {
                     for(int enableSplash = 1; enableSplash > -1; --enableSplash) {
-                        out.println(generateCommand(filenNames, wrapped, registry, stayAlive, enableSplash));
+                        out.println(generateCommand(
+                                filenNames, wrapped, registry, stayAlive, enableSplash));
                     }
                 }
             }
@@ -83,16 +84,17 @@ public class MakefileGenerator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> filenNames, final int wrapped, final int registry, final int stayAlive, final int enableSplash)
+    private static String generateCommand(final List<String> filenNames,
+            final int wrapped, final int registry, final int stayAlive, final int enableSplash)
     {
         final String fileName = String.format("bin/launch5j_$(CPU_ARCH)%s.exe", 
                 generateNameSuffix(wrapped, registry, stayAlive, enableSplash));
         final StringBuilder cmdLine = new StringBuilder(String.format(
                 "\t$(CC) $(CFLAGS) "
-                    + "-DJAR_FILE_WRAPPED=%d "
-                    + "-DDETECT_REGISTRY=%d "
-                    + "-DSTAY_ALIVE=%d "
-                    + "-DENABLE_SPLASH=%d "
+                    + "-DL5J_JAR_FILE_WRAPPED=%d "
+                    + "-DL5J_DETECT_REGISTRY=%d "
+                    + "-DL5J_STAY_ALIVE=%d "
+                    + "-DL5J_ENABLE_SPLASH=%d "
                     + "-o %s "
                     + "src/head.c obj/common.$(CPU_ARCH).o",
                 wrapped,

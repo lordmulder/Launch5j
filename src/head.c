@@ -29,25 +29,25 @@
 #include "resource.h"
 
 // Options
-#ifndef JAR_FILE_WRAPPED
-#define JAR_FILE_WRAPPED 0
+#ifndef L5J_JAR_FILE_WRAPPED
+#error  L5J_JAR_FILE_WRAPPED flag is *not* defined!
 #endif
-#ifndef DETECT_REGISTRY
-#define DETECT_REGISTRY 0
+#ifndef L5J_DETECT_REGISTRY
+#error  L5J_DETECT_REGISTRY flag is *not* defined!
 #endif
-#ifndef ENABLE_SPLASH
-#define ENABLE_SPLASH 1
+#ifndef L5J_ENABLE_SPLASH
+#error  L5J_ENABLE_SPLASH flag is *not* defined!
 #endif
-#ifndef STAY_ALIVE
-#define STAY_ALIVE 1
+#ifndef L5J_STAY_ALIVE
+#error  L5J_STAY_ALIVE flag is *not* defined!
 #endif
-#ifndef WAIT_FOR_WINDOW
-#define WAIT_FOR_WINDOW 1
+#ifndef L5J_WAIT_FOR_WINDOW
+#define L5J_WAIT_FOR_WINDOW 1
 #endif
 
 // Const
-static const wchar_t *const JRE_RELATIVE_PATH = L"runtime\\bin\\javaw.exe";
-static const wchar_t *const JRE_DOWNLOAD_LINK = L"https://adoptopenjdk.net/";
+static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptopenjdk.net/";
+static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin\\javaw.exe";
 static const size_t MIN_MUTEXID_LENGTH = 5U;
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 
@@ -451,7 +451,7 @@ static const wchar_t *get_executable_directory(const wchar_t *const executable_p
 
 static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, const wchar_t *const executable_directory)
 {
-#if JAR_FILE_WRAPPED
+#if L5J_JAR_FILE_WRAPPED
     return wcsdup(executable_path); /*JAR file is wrapped*/
 #else
     const wchar_t *jarfile_path = NULL;
@@ -827,7 +827,7 @@ static BOOL wait_for_process_ready(const HWND hwnd, const HANDLE process_handle,
     const DWORD ticks_start = GetTickCount();
     for (;;)
     {
-        if (input_idle || signaled_or_failed(WaitForInputIdle(process_handle, 125U)))
+        if (input_idle || signaled_or_failed(WaitForInputIdle(process_handle, 25U)))
         {
             const HWND child_hwnd = find_window_by_process_id(process_id);
             if (child_hwnd)
@@ -888,12 +888,13 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     return result;
 }
 
-static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title, const DWORD required_bitness, const ULONGLONG required_ver)
+static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd, const wchar_t *const title, const DWORD required_bitness, const ULONGLONG required_ver)
 {
     const DWORD req_version_comp[] =
     {
         (required_ver >> 48) & 0xFFFF, (required_ver >> 32) & 0xFFFF, (required_ver >> 16) & 0xFFFF, required_ver & 0xFFFF
     };
+    wchar_t *const jre_download_link = load_string(hinstance, ID_STR_JAVAURL);
     wchar_t *const version_str = (req_version_comp[3U] != 0U)
         ? awprintf(L"%u.%u.%u_%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U], req_version_comp[3U])
         : ((req_version_comp[2U] != 0U) 
@@ -901,22 +902,24 @@ static void show_jre_download_notice(const HWND hwnd, const wchar_t *const title
             : awprintf(L"%u.%u", req_version_comp[0U], req_version_comp[1U]));
     if(version_str)
     {
+        const wchar_t *const jre_download_ptr = AVAILABLE(jre_download_link) ? jre_download_link : JRE_DOWNLOAD_LINK_DEFAULT;
         const int result = (required_bitness == 0U)
             ? show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
                 L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
                 L"We recommend downloading the OpenJDK runtime here:\n%ls",
-                version_str, JRE_DOWNLOAD_LINK)
+                version_str, jre_download_ptr)
             : show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
                 L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
                 L"Only the %u-Bit (%ls) version of the JRE is supported!\n\n",
                 L"We recommend downloading the OpenJDK runtime:\n%ls",
-                version_str, required_bitness, (required_bitness == 64) ? L"x64" : L"x86", JRE_DOWNLOAD_LINK);
+                version_str, required_bitness, (required_bitness == 64) ? L"x64" : L"x86", jre_download_ptr);
         if (result == IDOK)
         {
-            ShellExecuteW(hwnd, NULL, JRE_DOWNLOAD_LINK, NULL, NULL, SW_SHOW);
+            ShellExecuteW(hwnd, NULL, jre_download_ptr, NULL, NULL, SW_SHOW);
         }
-        free(version_str);
     }
+    free(version_str);
+    free(jre_download_link);
 }
 
 /* ======================================================================== */
@@ -1001,11 +1004,13 @@ static wchar_t *const DEFAULT_HEADING = L"Launch5j";
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     int result = -1;
-    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL,
+         *java_runtime_path = NULL, *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
     HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
     HGDIOBJ splash_image = NULL;
+    BOOL have_screen_created = FALSE;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
 
@@ -1020,6 +1025,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 
     // Single instance
+#if L5J_STAY_ALIVE
     mutex_name = load_string(hInstance, ID_STR_MUTEXID);
     if (AVAILABLE(mutex_name) && (wcslen(mutex_name) >= MIN_MUTEXID_LENGTH + ((mutex_name[0U] == L'@') ? 0U : 1U)))
     {
@@ -1033,13 +1039,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             goto cleanup;
         }
     }
+#endif
 
     // Show the splash screen
-#if ENABLE_SPLASH
+#if L5J_ENABLE_SPLASH
     if (splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
     {
         if (create_splash_screen(hwnd, splash_image))
         {
+            have_screen_created = TRUE;
             process_window_messages(hwnd);
         }
     }
@@ -1073,7 +1081,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Does the JAR file exist?
-#if !JAR_FILE_WRAPPED
+#if !L5J_JAR_FILE_WRAPPED
     if (!file_exists(jarfile_path))
     {
         show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
@@ -1082,18 +1090,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 #endif
 
     // Find the Java runtime executable path (possibly from the registry)
-#if DETECT_REGISTRY
+#if L5J_DETECT_REGISTRY
     java_required_ver_min = load_java_version(hInstance, ID_STR_JAVAMIN, (8ull << 48));
     java_required_ver_max = load_java_version(hInstance, ID_STR_JAVAMAX, MAXULONGLONG);
     java_required_bitness = load_java_bitness(hInstance, ID_STR_BITNESS);
     if (!(java_runtime_path = detect_java_runtime(java_required_bitness, java_required_ver_min, java_required_ver_max)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Java Runtime Environment (JRE) could not be found!");
-        show_jre_download_notice(hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
+        show_jre_download_notice(hInstance, hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
         goto cleanup;
     }
 #else
-    if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, JRE_RELATIVE_PATH)))
+    jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
+    if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, AVAILABLE(jre_relative_path) ? jre_relative_path: JRE_RELATIVE_PATH_DEFAULT)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
         goto cleanup;
@@ -1124,7 +1133,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Process pending window messages
-#if ENABLE_SPLASH
+#if L5J_ENABLE_SPLASH
     process_window_messages(hwnd);
 #endif
 
@@ -1145,16 +1154,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     // Process pending window messages
-#if ENABLE_SPLASH
+#if L5J_ENABLE_SPLASH
     process_window_messages(hwnd);
-#if WAIT_FOR_WINDOW
+
+    // Wait until child-process window is showing
+#if L5J_WAIT_FOR_WINDOW
     wait_for_process_ready(hwnd, process_info.hProcess, process_info.dwProcessId);
 #endif
-    destroy_window(&hwnd);
 #endif
 
+    // Hide the splash screen now
+    if (have_screen_created)
+    {
+        ShowWindow(hwnd, SW_HIDE);
+    }
+
     // Wait for process to exit, then get the exit code
-#if STAY_ALIVE
+#if L5J_STAY_ALIVE
     if (signaled_or_failed(WaitForSingleObject(process_info.hProcess, INFINITE)))
     {
         DWORD exit_code = 0U;
@@ -1181,6 +1197,7 @@ cleanup:
     free((void*)command_line);
     free((void*)java_runtime_path);
     free((void*)jarfile_path);
+    free((void*)jre_relative_path);
     free((void*)executable_directory);
     free((void*)executable_path);
     free((void*)mutex_name);

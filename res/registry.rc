@@ -34,4 +34,5 @@ BEGIN
     ID_STR_JAVAMIN L"?" /*min supported JRE version, in "w.x.y.z" format*/
     ID_STR_JAVAMAX L"?" /*max supported JRE version, in "w.x.y.z" format*/
     ID_STR_BITNESS L"?" /*required JRE "bitness", i.e. "32" or "64"*/
+    ID_STR_JAVAURL L"?" /*Java download URL, if no usable JRE was found*/
 END
