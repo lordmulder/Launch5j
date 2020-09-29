@@ -356,6 +356,18 @@ static wchar_t *reg_read_string(const HKEY root_key, const wchar_t *const path, 
     return (wchar_t*) buffer;
 }
 
+static DWORD reg_read_string_uint32(const HKEY root_key, const wchar_t *const path, const wchar_t *const name, const BOOL view_64bit)
+{
+    DWORD value = 0;
+    const wchar_t *const string = reg_read_string(root_key, path, name, view_64bit);
+    if(NOT_EMPTY(string))
+    {
+        value = wcstoul(string, NULL, 10);
+    }
+    free((void*)string);
+    return value;
+}
+
 static BOOL reg_enum_subkeys(const HKEY root_key, const wchar_t *const path, const BOOL view_64bit, const reg_enum_callback_t callback, const ULONG_PTR user_data)
 {
     HKEY key = NULL;
@@ -557,7 +569,7 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
                 {
                     break;
                 }
-                token = wcstok(NULL, L"._+");
+                token = wcstok(NULL, L"._+-b");
                 first_token = FALSE;
             }
         }
@@ -580,9 +592,10 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
         L"%ls\\jre\\bin\\javaw.exe", L"%ls\\bin\\javaw.exe", NULL
     };
 
-    BOOL is_valid = FALSE;
+    const wchar_t *result = NULL;
     wchar_t *const java_home_path = reg_read_string(root_key, full_reg_path, L"JavaHome", flag_x64);
     trim_trailing_separator(wcstrim(java_home_path));
+
     if (NOT_EMPTY(java_home_path))
     {
         for (size_t i = 0U; REL_PATHS[i]; ++i)
@@ -592,8 +605,8 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
             {
                 if (file_exists(java_executable_path))
                 {
-                    free(java_home_path);
-                    return java_executable_path;
+                    result = java_executable_path;
+                    break;
                 }
                 free(java_executable_path);
             }
@@ -601,27 +614,43 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
     }
 
     free(java_home_path);
-    return NULL;
+    return result;
+}
+
+static void patch_java_version(ULONGLONG *const version, const DWORD component_version, const UINT shift)
+{
+    if(component_version > 0U)
+    {
+        *version &= (~(((ULONGLONG)0xFFFF) << shift));
+        *version |= (((ULONGLONG)(component_version & 0xFFFF)) << shift);
+    }
 }
 
 static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const ULONG_PTR user_data)
 {
     java_home_t *const context_ptr = (java_home_t*) user_data;
-    const ULONGLONG version = parse_java_version(key_name);
-    if ((version >= context_ptr->required_ver_min) && (version < context_ptr->required_ver_max) && (version > context_ptr->version))
+    wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->base_reg_path, key_name);
+    if (full_reg_path)
     {
-        wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->base_reg_path, key_name);
-        if (full_reg_path)
+        ULONGLONG version = parse_java_version(key_name);
+        patch_java_version(&version, reg_read_string_uint32(context_ptr->root_key, full_reg_path, L"MicroVersion",  context_ptr->flag_x64), 32U);
+        patch_java_version(&version, reg_read_string_uint32(context_ptr->root_key, full_reg_path, L"UpdateVersion", context_ptr->flag_x64), 16U);
+        patch_java_version(&version, reg_read_string_uint32(context_ptr->root_key, full_reg_path, L"BuildNumber",   context_ptr->flag_x64),  0U);
+        if ((version >= context_ptr->required_ver_min) && (version < context_ptr->required_ver_max))
         {
-            const wchar_t *const java_runtime_path = detect_java_runtime_verify(context_ptr->flag_x64, context_ptr->root_key, full_reg_path);
-            if(java_runtime_path)
+            if (version > context_ptr->version)
             {
-                SET_STRING(context_ptr->runtime_path, java_runtime_path);
-                context_ptr->version = version;
+                const wchar_t *const java_executable_path = detect_java_runtime_verify(context_ptr->flag_x64, context_ptr->root_key, full_reg_path);
+                if(java_executable_path)
+                {
+                    SET_STRING(context_ptr->runtime_path, java_executable_path);
+                    context_ptr->version = version;
+                }
             }
-            free(full_reg_path);
         }
+        free(full_reg_path);
     }
+
     return TRUE;
 }
 
