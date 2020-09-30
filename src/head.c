@@ -253,6 +253,41 @@ static const wchar_t *skip_leading_separator(const wchar_t *path)
     return path;
 }
 
+static const wchar_t *get_absolute_path(const wchar_t *const path)
+{
+    DWORD buff_len = 0U;
+    wchar_t *buffer = NULL;
+
+    if (NOT_EMPTY(path))
+    {
+        for (;;)
+        {
+            const DWORD result = GetFullPathNameW(path, buff_len, buffer, NULL);
+            if (result > 0U)
+            {
+                if (result < buff_len)
+                {
+                    return buffer;
+                }
+                else
+                {
+                    if (!(buffer = (wchar_t*) realloc(buffer, sizeof(wchar_t) * (buff_len = result))))
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                break; /*error*/
+            }
+        }
+    }
+
+    free(buffer);
+    return NULL;
+}
+
 static BOOL file_exists(const wchar_t *const filename) {
     struct _stat buffer;
     if (_wstat(filename, &buffer) == 0)
@@ -260,6 +295,22 @@ static BOOL file_exists(const wchar_t *const filename) {
         return S_ISDIR(buffer.st_mode) ? FALSE : TRUE;
     }
     return FALSE;
+}
+
+static UINT file_is_executable(const wchar_t *const file_path)
+{
+    DWORD binary_type = 0U;
+    if(GetBinaryTypeW(file_path, &binary_type))
+    {
+        switch(binary_type)
+        {
+        case SCS_32BIT_BINARY:
+            return 32U;
+        case SCS_64BIT_BINARY:
+            return 64U;
+        }
+    }
+    return 0U;
 }
 
 /* ======================================================================== */
@@ -608,17 +659,23 @@ static const wchar_t *detect_java_runtime_verify(const BOOL flag_x64, const HKEY
 
     if (NOT_EMPTY(java_home_path))
     {
+        const UINT required_bitness = flag_x64 ? 64U : 32U;
         for (size_t i = 0U; REL_PATHS[i]; ++i)
         {
-            wchar_t *const java_executable_path = awprintf(REL_PATHS[i], java_home_path);
+            const wchar_t *const java_executable_path = awprintf(REL_PATHS[i], java_home_path);
             if (java_executable_path)
             {
-                if (file_exists(java_executable_path))
+                const wchar_t *const full_executable_abspath = get_absolute_path(java_executable_path);
+                if (full_executable_abspath)
                 {
-                    result = java_executable_path;
-                    break;
+                    if (file_is_executable(full_executable_abspath) == required_bitness)
+                    {
+                        result = full_executable_abspath;
+                        break;
+                    }
+                    free((void*)full_executable_abspath);
                 }
-                free(java_executable_path);
+                free((void*)java_executable_path);
             }
         }
     }
@@ -1113,15 +1170,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 #else
     jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
-    if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : JRE_RELATIVE_PATH_DEFAULT)))
     {
-        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
-        goto cleanup;
-    }
-    if (!file_exists(java_runtime_path))
-    {
-        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required Java runtime could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
-        goto cleanup;
+        const wchar_t *const relative_path_ptr = AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : NULL;
+        if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT)))
+        {
+            show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
+            goto cleanup;
+        }
+        if (!file_is_executable(java_runtime_path))
+        {
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
+            goto cleanup;
+        }
     }
 #endif
 

@@ -1,3 +1,3 @@
 clean: init
-	rm -f bin/*.exe
-	rm -f obj/*.o
+	$(RM) bin/*.$(SUFFIX)
+	$(RM) obj/*.o
