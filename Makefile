@@ -35,6 +35,7 @@ else
 endif
 
 CFLAGS += -municode -mwindows -march=$(MARCH) -mtune=$(MTUNE)
+LDFLAGS = -lcomctl32
 
 .PHONY: all init resources build strip clean
 
@@ -49,47 +50,47 @@ init:
 	mkdir -p obj
 
 resources: init
-	echo $(OS)
 	windres -o obj/common.$(CPU_ARCH).o res/common.rc
 	windres -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
 	windres -o obj/registry.$(CPU_ARCH).o res/registry.rc
 
 build: init resources
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH).$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_nowait.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_nowait_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_registry.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_registry_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_registry_nowait.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
-	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.$(SUFFIX) src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH).exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_nowait.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_nowait_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_registry.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_registry_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_registry_nowait.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.exe src/head.c obj/common.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
+	$(CC) $(CFLAGS) -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.exe src/head.c obj/common.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o $(LDFLAGS)
 
 strip: build
-	strip bin/launch5j_$(CPU_ARCH).$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_nowait.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_nowait_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_registry.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_registry_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_registry_nowait.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.$(SUFFIX)
-	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.$(SUFFIX)
+	strip bin/launch5j_$(CPU_ARCH).exe
+	strip bin/launch5j_$(CPU_ARCH)_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_nowait.exe
+	strip bin/launch5j_$(CPU_ARCH)_nowait_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_registry.exe
+	strip bin/launch5j_$(CPU_ARCH)_registry_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_registry_nowait.exe
+	strip bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.exe
+	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.exe
 
 clean: init
 	$(RM) bin/*.$(SUFFIX)
 	$(RM) obj/*.o
+

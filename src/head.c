@@ -24,6 +24,7 @@
 // Win32 API
 #include <Windows.h>
 #include <shellapi.h>
+#include <commctrl.h>
 
 // Resources
 #include "resource.h"
@@ -323,7 +324,7 @@ static wchar_t *load_string(const HINSTANCE hinstance, const UINT id)
     const int str_len = LoadStringW(hinstance, id, (PWCHAR)&buffer, 0);
     if(str_len > 0)
     {
-        if (buffer = (wchar_t*) malloc(sizeof(wchar_t) * (str_len + 1U)))
+        if ((buffer = (wchar_t*) malloc(sizeof(wchar_t) * (str_len + 1U))))
         {
             if(LoadStringW(hinstance, id, buffer, str_len + 1U) > 0)
             {
@@ -800,12 +801,12 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
     const wchar_t *java_runtime_path;
     if (running_on_64bit())
     {
-        if (java_runtime_path = detect_java_runtime_loop(TRUE, required_bitness, required_ver_min, required_ver_max))
+        if ((java_runtime_path = detect_java_runtime_loop(TRUE, required_bitness, required_ver_min, required_ver_max)))
         {
             return java_runtime_path;
         }
     }
-    if (java_runtime_path = detect_java_runtime_loop(FALSE, required_bitness, required_ver_min, required_ver_max))
+    if ((java_runtime_path = detect_java_runtime_loop(FALSE, required_bitness, required_ver_min, required_ver_max)))
     {
         return java_runtime_path;
     }
@@ -1116,6 +1117,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
 
+    // Ensure that the ComCtl32 DLL is loaded
+    InitCommonControls(); 
+
     // Initialize
     SecureZeroMemory(&startup_info, sizeof(STARTUPINFOW));
     SecureZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
@@ -1145,7 +1149,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     // Show the splash screen
 #if L5J_ENABLE_SPLASH
-    if (splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE))
+    if ((splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE)))
     {
         if (create_splash_screen(hwnd, splash_image))
         {

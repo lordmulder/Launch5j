@@ -110,6 +110,8 @@ public class MakefileGenerator {
             append(cmdLine, ' ', "obj/registry.$(CPU_ARCH).o");
         }
         
+        append(cmdLine, ' ', "$(LDFLAGS)");
+        
         filenNames.add(fileName);
         return cmdLine.toString();
     }
