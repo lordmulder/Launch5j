@@ -591,7 +591,7 @@ typedef struct
 }
 java_home_t;
 
-static BOOL is_old_format(const wchar_t *const version_str)
+static BOOL detect_update_format(const wchar_t *const version_str)
 {
     BOOL digit_flag = FALSE;
     size_t pos = 0U;
@@ -608,7 +608,7 @@ static BOOL is_old_format(const wchar_t *const version_str)
     {
        ++pos;
     }
-    if (digit_flag)
+    if (digit_flag && version_str[pos])
     {
         return (version_str[pos] == L'u') || (version_str[pos] == L'U');
     }
@@ -619,15 +619,16 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
 {
     ULONGLONG version = 0ULL;
     UINT level = 0U;
+    static const wchar_t *const delimiters = L".,_+-uUbB";
 
     if (NOT_EMPTY(version_str))
     {
         wchar_t *const temp = wcsdup(version_str);
         if (temp)
         {
-            const BOOL old_format = is_old_format(temp);
+            const BOOL is_update_forma = detect_update_format(temp);
             BOOL first_token = TRUE;
-            const wchar_t *token = wcstok(temp, L".uU");
+            const wchar_t *token = wcstok(temp, delimiters);
             while (token)
             {
                 const DWORD component = wcstoul(token, NULL, 10);
@@ -635,7 +636,7 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
                 {
                     version = (version << 16) | (component & 0xFFFF);
                     ++level;
-                    if(old_format && (level == 1U))
+                    if(is_update_forma && (level == 1U))
                     {
                         version <<= 16;
                         ++level;
@@ -645,7 +646,7 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
                 {
                     break;
                 }
-                token = wcstok(NULL, L"._+-b");
+                token = wcstok(NULL, delimiters);
                 first_token = FALSE;
             }
         }
@@ -678,10 +679,10 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
     {
         for (size_t i = 0U; REL_PATHS[i]; ++i)
         {
-            const wchar_t *const java_executable_path = awprintf(REL_PATHS[i], java_home_path);
-            if (java_executable_path)
+            const wchar_t *const javaw_executable_path = awprintf(REL_PATHS[i], java_home_path);
+            if (javaw_executable_path)
             {
-                const wchar_t *const absolute_executable_path = get_absolute_path(java_executable_path);
+                const wchar_t *const absolute_executable_path = get_absolute_path(javaw_executable_path);
                 if (absolute_executable_path)
                 {
                     const DWORD bitness = file_is_executable(absolute_executable_path);
@@ -695,7 +696,7 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
                         free((void*)absolute_executable_path);
                     }
                 }
-                free((void*)java_executable_path);
+                free((void*)javaw_executable_path);
             }
             if(result > 0U)
             {
@@ -708,32 +709,15 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
     return result;
 }
 
-static void patch_java_version(ULONGLONG *const version, const DWORD component_version, const UINT shift)
-{
-    if(component_version > 0U)
-    {
-        *version &= (~(((ULONGLONG)0xFFFF) << shift));
-        *version |= (((ULONGLONG)(component_version & 0xFFFF)) << shift);
-    }
-}
-
 static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const ULONG_PTR user_data)
 {
     java_home_t *const context_ptr = (java_home_t*) user_data;
-    wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->registry.base_path, key_name);
-    if (!full_reg_path)
-    {
-        return FALSE; /*failure*/
-    }
-
     ULONGLONG version = parse_java_version(key_name);
-    patch_java_version(&version, reg_read_string_uint32(context_ptr->registry.root_key, full_reg_path, L"MicroVersion",  context_ptr->registry.view_64bit), 32U);
-    patch_java_version(&version, reg_read_string_uint32(context_ptr->registry.root_key, full_reg_path, L"UpdateVersion", context_ptr->registry.view_64bit), 16U);
-    patch_java_version(&version, reg_read_string_uint32(context_ptr->registry.root_key, full_reg_path, L"BuildNumber",   context_ptr->registry.view_64bit),  0U);
 
-    if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max))
+    if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max) && (version > context_ptr->result.version))
     {
-        if (version > context_ptr->result.version)
+        const wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->registry.base_path, key_name);
+        if (full_reg_path)
         {
             const wchar_t *java_runtime_path;
             const DWORD bitness = detect_java_runtime_verify(&java_runtime_path, context_ptr->registry.root_key, full_reg_path, context_ptr->registry.view_64bit);
@@ -750,10 +734,10 @@ static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const UL
                     free((void*)java_runtime_path);
                 }
             }
+            free((void*)full_reg_path);
         }
     }
 
-    free(full_reg_path);
     return TRUE;
 }
 
