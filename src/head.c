@@ -397,6 +397,41 @@ static const wchar_t *get_absolute_path(const wchar_t *const path)
     return NULL;
 }
 
+static const wchar_t *get_short_path(const wchar_t *const path)
+{
+    DWORD buff_len = 0U;
+    wchar_t *buffer = NULL;
+
+    if (NOT_EMPTY(path))
+    {
+        for (;;)
+        {
+            const DWORD result = GetShortPathNameW(path, buffer, buff_len);
+            if (result > 0U)
+            {
+                if (result < buff_len)
+                {
+                    return buffer;
+                }
+                else
+                {
+                    if (!(buffer = (wchar_t*) realloc(buffer, sizeof(wchar_t) * (buff_len = result))))
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                break; /*error*/
+            }
+        }
+    }
+
+    free(buffer);
+    return NULL;
+}
+
 static BOOL file_exists(const wchar_t *const filename) {
     struct _stat buffer;
     if (_wstat(filename, &buffer) == 0)
@@ -1262,8 +1297,8 @@ static wchar_t *const DEFAULT_HEADING = L"Launch5j";
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLine, int _nCmdShow)
 {
     int result = -1;
-    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL,
-        *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *cmd_args_encoded = NULL, *ext_args_encoded = NULL, *command_line = NULL;
+    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, * jarfile_short_path = NULL,
+        *java_runtime_path = NULL, *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *cmd_args_encoded = NULL, *ext_args_encoded = NULL, *command_line = NULL;
     HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
@@ -1353,6 +1388,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     }
 #endif
 
+    // Convert JAR file path to short form
+    jarfile_short_path = get_short_path(jarfile_path);
+
     // Find the Java runtime executable path (possibly from the registry)
 #if L5J_DETECT_REGISTRY
     java_required_ver_min = load_java_version(hInstance, ID_STR_JAVAMIN, (8ull << 48));
@@ -1391,15 +1429,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     // Build command-line
     if (AVAILABLE(cmd_extra_args) && (ext_args_encoded = encode_commandline(cmd_extra_args)))
     {
+        const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, pid, jarfile_path, ext_args_encoded, cmd_args_encoded)
-            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls",     java_runtime_path, pid,                 jarfile_path, ext_args_encoded, cmd_args_encoded);
+            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, ext_args_encoded, cmd_args_encoded)
+            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls",     java_runtime_path, pid,                 jarfile_ptr, ext_args_encoded, cmd_args_encoded);
     }
     else
     {
+        const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\"", java_runtime_path, jvm_extra_args, pid, jarfile_path, cmd_args_encoded)
-            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\"",     java_runtime_path, pid,                 jarfile_path, cmd_args_encoded);
+            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\"", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, cmd_args_encoded)
+            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\"",     java_runtime_path, pid,                 jarfile_ptr, cmd_args_encoded);
     }
 
     // Make sure command-line was created
@@ -1476,6 +1516,7 @@ cleanup:
     free((void*)command_line);
     free((void*)java_runtime_path);
     free((void*)jarfile_path);
+    free((void*)jarfile_short_path);
     free((void*)jre_relative_path);
     free((void*)executable_directory);
     free((void*)executable_path);
