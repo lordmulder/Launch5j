@@ -69,7 +69,7 @@ static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 } \
 while(0)
 
-static wchar_t *vawprintf(const wchar_t *const fmt, va_list ap)
+static wchar_t *vaswprintf(const wchar_t *const fmt, va_list ap)
 {
     const int str_len = _vscwprintf(fmt, ap);
     if (str_len < 1)
@@ -93,12 +93,12 @@ static wchar_t *vawprintf(const wchar_t *const fmt, va_list ap)
     return buffer;
 }
 
-static wchar_t *awprintf(const wchar_t *const fmt, ...)
+static wchar_t *aswprintf(const wchar_t *const fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
 
-    wchar_t *const buffer = vawprintf(fmt, ap);
+    wchar_t *const buffer = vaswprintf(fmt, ap);
 
     va_end(ap);
     return buffer;
@@ -666,13 +666,13 @@ static const wchar_t *get_jarfile_path(const wchar_t *const executable_path, con
         const size_t len = wcslen(path_prefix);
         if (!((len > 0U) && ((path_prefix[len-1U] == L'\\') || (path_prefix[len-1U] == L'/'))))
         {
-            jarfile_path = awprintf(L"%ls.jar", path_prefix);
+            jarfile_path = aswprintf(L"%s.jar", path_prefix);
         }
     }
 
     if (!jarfile_path)
     {
-        jarfile_path = NOT_EMPTY(executable_directory) ? awprintf(L"%ls\\%ls", executable_directory, DEFAULT_JARFILE_NAME) : wcsdup(DEFAULT_JARFILE_NAME);
+        jarfile_path = NOT_EMPTY(executable_directory) ? aswprintf(L"%s\\%s", executable_directory, DEFAULT_JARFILE_NAME) : wcsdup(DEFAULT_JARFILE_NAME);
     }
 
     free((void*)path_prefix);
@@ -809,7 +809,7 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
 {
     static const wchar_t *const REL_PATHS[] =
     {
-        L"%ls\\jre\\bin\\javaw.exe", L"%ls\\bin\\javaw.exe", NULL
+        L"%s\\jre\\bin\\javaw.exe", L"%s\\bin\\javaw.exe", NULL
     };
 
     *executable_path_out = NULL;
@@ -822,7 +822,7 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
     {
         for (size_t i = 0U; REL_PATHS[i]; ++i)
         {
-            const wchar_t *const javaw_executable_path = awprintf(REL_PATHS[i], java_home_path);
+            const wchar_t *const javaw_executable_path = aswprintf(REL_PATHS[i], java_home_path);
             if (javaw_executable_path)
             {
                 const wchar_t *const absolute_executable_path = get_absolute_path(javaw_executable_path);
@@ -859,7 +859,7 @@ static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const UL
 
     if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max) && (version > context_ptr->result.version))
     {
-        const wchar_t *const full_reg_path = awprintf(L"%ls\\%ls", context_ptr->registry.base_path, key_name);
+        const wchar_t *const full_reg_path = aswprintf(L"%s\\%s", context_ptr->registry.base_path, key_name);
         if (full_reg_path)
         {
             const wchar_t *java_runtime_path;
@@ -1171,7 +1171,7 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     va_list ap;
     va_start(ap, format);
 
-    const wchar_t *const text = vawprintf(format, ap );
+    const wchar_t *const text = vaswprintf(format, ap );
     if(NOT_EMPTY(text))
     {
         result = MessageBoxW(hwnd, text, title, flags);
@@ -1189,26 +1189,27 @@ static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd,
     };
     wchar_t *const jre_download_link = load_string(hinstance, ID_STR_JAVAURL);
     wchar_t *const version_str = (req_version_comp[3U] != 0U)
-        ? awprintf(L"%u.%u.%u_%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U], req_version_comp[3U])
+        ? aswprintf(L"%u.%u.%u_%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U], req_version_comp[3U])
         : ((req_version_comp[2U] != 0U) 
-            ? awprintf(L"%u.%u.%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U])
-            : awprintf(L"%u.%u", req_version_comp[0U], req_version_comp[1U]));
+            ? aswprintf(L"%u.%u.%u", req_version_comp[0U], req_version_comp[1U], req_version_comp[2U])
+            : aswprintf(L"%u.%u", req_version_comp[0U], req_version_comp[1U]));
     if(version_str)
     {
         const wchar_t *const jre_download_ptr = IS_HTTP_URL(jre_download_link) ? jre_download_link : JRE_DOWNLOAD_LINK_DEFAULT;
         const int result = (required_bitness == 0U)
-            ? show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
-                L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
-                L"We recommend downloading the OpenJDK runtime here:\n%ls",
+            ? show_message_format(hwnd, MB_ICONINFORMATION | MB_OKCANCEL | MB_TOPMOST, title,
+                L"This application requires the Java Runtime Environment, version %s, or a compatible newer version.\n\n"
+                L"We recommend downloading the OpenJDK runtime here:\n%s",
                 version_str, jre_download_ptr)
-            : show_message_format(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title,
-                L"This application requires the Java Runtime Environment, version %ls, or a compatible newer version.\n\n"
-                L"Only the %u-Bit (%ls) version of the JRE is supported!\n\n"
-                L"We recommend downloading the OpenJDK runtime here:\n%ls",
+            : show_message_format(hwnd, MB_ICONINFORMATION | MB_OKCANCEL | MB_TOPMOST, title,
+                L"This application requires the Java Runtime Environment, version %s, or a compatible newer version.\n\n"
+                L"Only the %u-Bit (%s) version of the JRE is supported!\n\n"
+                L"We recommend downloading the OpenJDK runtime here:\n%s",
                 version_str, required_bitness, (required_bitness == 64) ? L"x64" : L"x86", jre_download_ptr);
         if (result == IDOK)
         {
             ShellExecuteW(hwnd, NULL, jre_download_ptr, NULL, NULL, SW_SHOW);
+            show_message(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title, L"When installing OpenJDK on your machine, please be sure to enable \x201cJavaSoft (Oracle) registry keys\x201d, otherwise we will not be able to find your Java Runtime Environment !!!");
         }
     }
     free(version_str);
@@ -1237,7 +1238,7 @@ static BOOL initialize_mutex(HANDLE *const handle, const wchar_t *const mutex_na
     const ULONGLONG hashcode_0 = hash_code((const BYTE*)BUILD_TIME, sizeof(wchar_t) * strlen(BUILD_TIME));
     const ULONGLONG hashcode_1 = hash_code((const BYTE*)mutex_name, sizeof(wchar_t) * wcslen(mutex_name));
 
-    const wchar_t *const mutex_uuid = awprintf(L"l5j.%016llX%016llX", hashcode_0, hashcode_1);
+    const wchar_t *const mutex_uuid = aswprintf(L"l5j.%016llX%016llX", hashcode_0, hashcode_1);
     if (!mutex_uuid)
     {
         return TRUE; /*better safe than sorry*/
@@ -1383,7 +1384,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 #if !L5J_JAR_FILE_WRAPPED
     if (!file_exists(jarfile_path))
     {
-        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required JAR file could not be found:\n\n%ls\n\n\nRe-installing the application may fix the problem!", jarfile_path);
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The required JAR file could not be found:\n\n%s\n\n\nRe-installing the application may fix the problem!", jarfile_path);
         goto cleanup;
     }
 #endif
@@ -1406,14 +1407,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
     {
         const wchar_t *const relative_path_ptr = AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : NULL;
-        if (!(java_runtime_path = awprintf(L"%ls\\%ls", executable_directory, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT)))
+        if (!(java_runtime_path = aswprintf(L"%s\\%s", executable_directory, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT)))
         {
             show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
             goto cleanup;
         }
         if (!file_is_executable(java_runtime_path))
         {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%ls\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%s\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
             goto cleanup;
         }
     }
@@ -1431,15 +1432,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     {
         const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, ext_args_encoded, cmd_args_encoded)
-            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls",     java_runtime_path, pid,                 jarfile_ptr, ext_args_encoded, cmd_args_encoded);
+            ? aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s %s" : L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, ext_args_encoded, cmd_args_encoded)
+            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s %s"     : L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s",     java_runtime_path, pid,                 jarfile_ptr, ext_args_encoded, cmd_args_encoded);
     }
     else
     {
         const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\"", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, cmd_args_encoded)
-            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\"",     java_runtime_path, pid,                 jarfile_ptr, cmd_args_encoded);
+            ? aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s" : L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\"", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, cmd_args_encoded)
+            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s"     : L"\"%s\" -Dl5j.pid=%u -jar \"%s\"",     java_runtime_path, pid,                 jarfile_ptr, cmd_args_encoded);
     }
 
     // Make sure command-line was created
@@ -1460,12 +1461,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
         const wchar_t *const error_text = describe_system_error(GetLastError());
         if (error_text)
         {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%ls\n\n\n%ls", command_line, error_text);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%s\n\n\n%s", command_line, error_text);
             free((void*)error_text);
         }
         else
         {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%ls", command_line);
+            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Failed to create the Java process:\n\n%s", command_line);
         }
         goto cleanup;
     }
