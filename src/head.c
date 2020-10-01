@@ -69,7 +69,6 @@ static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 } \
 while(0)
 
-
 static wchar_t *vawprintf(const wchar_t *const fmt, va_list ap)
 {
     const int str_len = _vscwprintf(fmt, ap);
