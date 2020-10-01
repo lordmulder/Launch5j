@@ -83,7 +83,7 @@ static wchar_t *vawprintf(const wchar_t *const fmt, va_list ap)
         return NULL;
     }
 
-    const int result = vswprintf(buffer, ((size_t)str_len) + 1U, fmt, ap);
+    const int result = _vsnwprintf(buffer, ((size_t)str_len) + 1U, fmt, ap);
     if (result < 1)
     {
         free(buffer);
@@ -150,6 +150,115 @@ static wchar_t *wcstrim(wchar_t *const str)
         }
     }
     return str;
+}
+
+/* ======================================================================== */
+/* Character encoding                                                       */
+/* ======================================================================== */
+
+static const char *const HEX_CHARS = "0123456789ABCDEF";
+
+static CHAR *utf16_to_bytes(const wchar_t *const input, const UINT code_page)
+{
+    CHAR *buffer;
+    DWORD buffer_size = 0U, result = 0U;
+
+    buffer_size = WideCharToMultiByte(code_page, 0, input, -1, NULL, 0, NULL, NULL);
+    if(buffer_size < 1U)
+    {
+        return NULL;
+    }
+
+    buffer = (CHAR*) malloc(sizeof(CHAR) * buffer_size);
+    if(!buffer)
+    {
+        return NULL;
+    }
+
+    result = WideCharToMultiByte(code_page, 0, input, -1, (LPSTR)buffer, buffer_size, NULL, NULL);
+    if((result > 0U) && (result <= buffer_size))
+    {
+        return buffer;
+    }
+
+    free(buffer);
+    return NULL;
+}
+
+static BOOL char_needs_encoding(const CHAR c)
+{
+    if (((c >= '0') && (c <= '9')) || ((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z')))
+    {
+        return FALSE;
+    }
+    if ((c == '-') || (c == '_') || (c == '.') || (c == '*') || (c == ' '))
+    {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static size_t url_encoded_length(const CHAR *const input)
+{
+    if ((input) && input[0U])
+    {
+        size_t length = strlen(input);
+        for (size_t i = 0U; input[i]; ++i)
+        {
+            if (char_needs_encoding(input[i]))
+            {
+                length += 2U;
+            }
+        }
+        return length + 1U;
+    }
+    return 0U;
+}
+
+static const wchar_t *url_encode_str(const CHAR *const input)
+{
+    const size_t buffer_size = url_encoded_length(input);
+    if(buffer_size < 1U)
+    {
+        return NULL;
+    }
+
+    wchar_t *buffer = (wchar_t*) malloc(sizeof(wchar_t) * buffer_size);
+    if (!buffer)
+    {
+        return NULL;
+    }
+
+    size_t j = 0U;
+    for (size_t i = 0U; input[i]; ++i)
+    {
+        if (char_needs_encoding(input[i]))
+        {
+            buffer[j++] = L'%';
+            buffer[j++] = (wchar_t) HEX_CHARS[(((BYTE)input[i]) >> 4) & 0xF];
+            buffer[j++] = (wchar_t) HEX_CHARS[ ((BYTE)input[i])       & 0xF];
+        }
+        else
+        {
+            buffer[j++] = (wchar_t) ((input[i] != ' ') ? input[i] : '+');
+        }
+    }
+
+    buffer[j] = '\0';
+    return buffer;
+}
+
+static const wchar_t *url_encode_wcs(const wchar_t *const input, const UINT code_page)
+{
+    const CHAR *byte_string = utf16_to_bytes(input, code_page);
+    if (!byte_string)
+    {
+        return NULL;
+    }
+
+    const wchar_t *encoded = url_encode_str(byte_string);
+    free((void*)byte_string);
+    return encoded;
 }
 
 /* ======================================================================== */
@@ -819,6 +928,69 @@ static DWORD load_java_bitness(const HINSTANCE hinstance, const UINT id)
 }
 
 /* ======================================================================== */
+/* Command-line                                                             */
+/* ======================================================================== */
+
+static wchar_t *encode_commandline_args(const int argc, const LPWSTR *const argv)
+{
+    wchar_t *result_buffer = NULL;
+    if (argv && (argc > 0))
+    {
+        const wchar_t **encoded_argv = (const wchar_t**) malloc(sizeof(wchar_t*) * argc);
+        if (encoded_argv)
+        {
+            size_t total_len = 0U;
+            for (int i = 0; i < argc; ++i)
+            {
+                if (NOT_EMPTY(encoded_argv[i] = url_encode_wcs(argv[i], CP_UTF8)))
+                {
+                    total_len += (wcslen(encoded_argv[i]) + 1U);
+                }
+            }
+            if (total_len > 0U)
+            {
+                if ((result_buffer = (wchar_t*) calloc( total_len, sizeof(wchar_t))))
+                {
+                    for(int i = 0; i < argc; ++i)
+                    {
+                        if (NOT_EMPTY(encoded_argv[i]))
+                        {
+                            if(result_buffer[0U])
+                            {
+                                wcscat(result_buffer, L" ");
+                            }
+                            wcscat(result_buffer, encoded_argv[i]);
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < argc; ++i)
+            {
+                free((void*)encoded_argv[i]);
+            }
+            free(encoded_argv);
+        }
+    }
+    return result_buffer;
+}
+
+static const wchar_t *encode_commandline(const wchar_t *const command_line)
+{
+    const wchar_t * encoded = NULL;
+    if (NOT_EMPTY(command_line))
+    {
+        int argc = 0;
+        const LPWSTR *const argv = CommandLineToArgvW(command_line, &argc);
+        if (argv)
+        {
+             encoded = encode_commandline_args(argc, argv);
+             LocalFree((HLOCAL)argv);
+        }
+    }
+    return encoded;
+}
+
+/* ======================================================================== */
 /* Splash screen                                                            */
 /* ======================================================================== */
 
@@ -1087,11 +1259,11 @@ static void destroy_window(HWND *const hwnd)
 static wchar_t *const DEFAULT_HEADING = L"Launch5j";
 #define APP_HEADING (AVAILABLE(app_heading) ? app_heading : DEFAULT_HEADING)
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLine, int _nCmdShow)
 {
     int result = -1;
-    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL,
-         *java_runtime_path = NULL, *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
+    const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL, *java_runtime_path = NULL,
+        *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *cmd_args_encoded = NULL, *ext_args_encoded = NULL, *command_line = NULL;
     HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
@@ -1106,6 +1278,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Initialize
     SecureZeroMemory(&startup_info, sizeof(STARTUPINFOW));
     SecureZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
+
+    // Get current process ID
+    const DWORD pid = GetCurrentProcessId();
 
     // Load title
     app_heading = load_string(hInstance, ID_STR_HEADING);
@@ -1210,14 +1385,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     jvm_extra_args = load_string(hInstance, ID_STR_JVMARGS);
     cmd_extra_args = load_string(hInstance, ID_STR_CMDARGS);
 
-    // Build the command-line
-    command_line = AVAILABLE(cmd_extra_args)
-        ? (AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, jarfile_path, cmd_extra_args, pCmdLine)
-            : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls %ls"     : L"\"%ls\" -jar \"%ls\" %ls",     java_runtime_path,                 jarfile_path, cmd_extra_args, pCmdLine))
-        : (AVAILABLE(jvm_extra_args)
-            ? awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" %ls -jar \"%ls\" %ls" : L"\"%ls\" %ls -jar \"%ls\"", java_runtime_path, jvm_extra_args, jarfile_path, pCmdLine)
-            : awprintf(NOT_EMPTY(pCmdLine) ? L"\"%ls\" -jar \"%ls\" %ls"     : L"\"%ls\" -jar \"%ls\"",     java_runtime_path,                 jarfile_path, pCmdLine));
+    // Get user-provided command-line args
+    cmd_args_encoded = encode_commandline(pCmdLine);
+
+    // Build command-line
+    if (AVAILABLE(cmd_extra_args) && (ext_args_encoded = encode_commandline(cmd_extra_args)))
+    {
+        command_line = AVAILABLE(jvm_extra_args)
+            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls", java_runtime_path, jvm_extra_args, pid, jarfile_path, ext_args_encoded, cmd_args_encoded)
+            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls",     java_runtime_path, pid,                 jarfile_path, ext_args_encoded, cmd_args_encoded);
+    }
+    else
+    {
+        command_line = AVAILABLE(jvm_extra_args)
+            ? awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\" %ls" : L"\"%ls\" %ls -Dl5j.pid=%u -jar \"%ls\"", java_runtime_path, jvm_extra_args, pid, jarfile_path, cmd_args_encoded)
+            : awprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\" %ls"     : L"\"%ls\" -Dl5j.pid=%u -jar \"%ls\"",     java_runtime_path, pid,                 jarfile_path, cmd_args_encoded);
+    }
+
+    // Make sure command-line was created
     if (!command_line)
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java command-line could not be generated!");
@@ -1286,6 +1471,8 @@ cleanup:
 
     free((void*)jvm_extra_args);
     free((void*)cmd_extra_args);
+    free((void*)ext_args_encoded);
+    free((void*)cmd_args_encoded);
     free((void*)command_line);
     free((void*)java_runtime_path);
     free((void*)jarfile_path);
