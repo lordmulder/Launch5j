@@ -160,6 +160,12 @@ public class YourMainClass {
 }
 ```
 
+## The JAR file name
+
+Be aware that the same problem of “mangled” Unicode characters applies when the path of the JAR file is passed to the Java executable. In other words, the Java runtime *fails* to execute any JAR files whose path &ndash; file name or directory name anywhere in the path &ndash; contains any Unicode characters that cannot be represented in the computer's *local* ANSI codepage! Unfortunately, we can **not** encode the path of the JAR file as we do with the other command-line arguments, because the Jave executable requires the path of the JAR file to be passed in a non-encoded form.
+
+Therefore, it is recommended to ***only*** use ASCII characters in the name of your JAR file and in the “install” path !!!
+
 # Build instructions
 
 In order to build Launch5j from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
