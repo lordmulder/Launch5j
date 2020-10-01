@@ -126,6 +126,33 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
 *Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
 
+# Unicode command-line arguments
+
+There is a *long-standing* bug in Java (on the Windows&trade; platform), which causes *Unicode* command-line arguments to be “mangled”. More specifically, even if the Unicode command-line arguments are properly passed to the Java executable (`java.exe`), they are **not** forwarded correctly to the `main()` method of your Java program!
+
+Instead, any characters that can **not** be represented in the computer's *local* ANSI codepage (pretty much any *non*-ASCII characters) are replaced by **`?`** characters. The cause of the problem apparently is that the “native” C code of the Java executable still uses the *legacy* `main()` entry point instead of the [`wmain()`](https://docs.microsoft.com/en-us/cpp/c-language/using-wmain?view=vs-2015) entry point. The latter is the modern Unicode-aware entry point that applications written for *Windows 2000 and later* **should** be using &ndash; ouch!
+
+As a workaround, Launch5j will convert the given Unicode command-line arguments to the UTF-8 format and then apply [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) on top of that. This ensures that *only* pure ASCII characters are passed to the Java executable, thus preventing the command-line from being “mangled”. Still the original Unicode arguments can be reconstructed.
+
+The only downside is that a bit of additional processing will be required in the application code:
+```
+public class YourMainClass {
+  public static void main(final String[] args) {
+    decodeCommandlineArgs(args);
+    /* your application code goes here! */
+  }
+
+  private static void decodeCommandlineArgs(final String[] argv) {
+      if (System.getProperty("l5j.pid") == null) {
+          return; /* nothing to do */
+      }
+      for (int i = 0; i < argv.length; ++i) {
+          try {
+              argv[i] = URLDecoder.decode(argv[i], StandardCharsets.UTF_8);
+          } catch (Exception e) { }
+      }
+  }
+```
 # Build instructions
 
 In order to build Launch5j from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
