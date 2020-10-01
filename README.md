@@ -14,21 +14,23 @@ There currently are two different ways to use Launch5j with your application cod
 * ***Use the launcher executable with a separate JAR file***  
   
   Simply put the launcher executable (`launch5j.exe`) and your JAR file into the same directory. Launch5j will automatically detect the path of the JAR file based on the location of the executable file. More specifically, Launch5j detects the full path of the executable file and then replaces the `.exe` file extension with a `.jar` file extension. Of course, you can rename the `launch5j.exe` executable to whatever you prefer.
+  
+  *For example:* If you application's JAR file is called `bazinga.jar`, pick the Launch5j variant of your choice, rename the Launch5j executable to `bazinga.exe`, and put these two files (JAR + EXE) into the “install”directory.
 
 * ***Combine the launcher executable and the JAR file (“wrapping”)***  
-
-  In order to combine the launcher executable (`launch5j_wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following *copy* command-line in the terminal:
-
-      copy /B launch5j_wrapped.exe + my_program.jar my_program.exe
-
-  If you are building you application with Apache Ant, consider using the `concat` task like this:
   
-      <concat destfile="my_program.exe" binary="true">
+  In order to combine the launcher executable (`launch5j_wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following **copy** command-line in the terminal:
+  
+      copy /B launch5j_wrapped.exe + bazinga.jar bazinga.exe
+  
+  If you are building you application with [**Apache Ant**](https://ant.apache.org/), consider using the `concat` task like this:
+  
+      <concat destfile="bazinga.exe" binary="true">
          <fileset file="launch5j_wrapped.exe"/>
-         <fileset file="my_program.jar"/>
+         <fileset file="bazinga.jar"/>
       </concat>
 
-  The resulting `my_program.exe` will be fully self-contained and is the only file you'll need to ship.
+  The resulting `bazinga.exe` will be fully self-contained and is the only file you'll need to ship.
 
   **Warning:** Code signing, as with Microsoft&reg;'s `SignTool`, probably does **not** work with the “wrapped” executable file! If code signing is a requirement, please use a *separate* JAR file and just sing the launcher executable.
 
@@ -135,6 +137,7 @@ Instead, any characters that can **not** be represented in the computer's *local
 As a workaround, Launch5j will convert the given Unicode command-line arguments to the UTF-8 format and then apply [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) on top of that. This ensures that *only* pure ASCII characters are passed to the Java executable, thus preventing the command-line from being “mangled”. Still the original Unicode arguments can be reconstructed.
 
 The only downside is that a bit of additional processing will be required in the application code:
+
 ```
 public class YourMainClass {
   public static void main(final String[] args) {
@@ -143,16 +146,20 @@ public class YourMainClass {
   }
 
   private static void decodeCommandlineArgs(final String[] argv) {
-      if (System.getProperty("l5j.pid") == null) {
-          return; /* nothing to do */
-      }
-      for (int i = 0; i < argv.length; ++i) {
-          try {
-              argv[i] = URLDecoder.decode(argv[i], StandardCharsets.UTF_8);
-          } catch (Exception e) { }
-      }
+    if (System.getProperty("l5j.pid") == null) {
+      return; /* nothing to do, if not started by L5j */
+    }
+    for (int i = 0; i < argv.length; ++i) {
+      try {
+        argv[i] = URLDecoder.decode(argv[i], StandardCharsets.UTF_8);
+      } catch (Exception e) { }
+    }
   }
+
+  /* ... */
+}
 ```
+
 # Build instructions
 
 In order to build Launch5j from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
