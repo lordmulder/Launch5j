@@ -11,6 +11,8 @@
 /* https://sourceforge.net/p/launch4j/                      */
 /************************************************************/
 
+package com.muldersoft.l5j.makefile;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +26,7 @@ import java.util.regex.Pattern;
 /*
  * Helper program to generate the Makefile rules for Launch5j
  */
-public class MakefileGenerator {
+public class Generator {
 
     private final static String EMPTY = "";
     private final static Pattern RTRIM = Pattern.compile("\\s+$");
@@ -57,7 +59,7 @@ public class MakefileGenerator {
     }
 
     private static void outputTemplate(final PrintStream out, final String name) throws IOException {
-        try(final InputStream in = MakefileGenerator.class.getResourceAsStream(String.format("/templates/%s.mak", name))) {
+        try(final InputStream in = Generator.class.getResourceAsStream(String.format("/.assets/templates/%s.mak", name))) {
             if(in == null) {
                 throw new IOException("Failed to open '" + name + "' template file!");
             }

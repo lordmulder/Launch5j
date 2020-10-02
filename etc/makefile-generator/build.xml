@@ -1,0 +1,31 @@
+<project name="com.muldersoft.l5j.makefile.generator" default="dist" basedir=".">
+    <description>Launch5j example code</description>
+
+    <property name="src" location="src"/>
+    <property name="res" location="res"/>
+    <property name="build" location="build"/>
+    <property name="dist" location="dist"/>
+ 
+    <target name="init">
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${build}"/>
+    </target>
+ 
+    <target name="compile" depends="init" description="compile the source">
+        <javac srcdir="${src}" destdir="${build}" source="1.8" target="1.8" debuglevel="lines,vars,source" includeantruntime="false"/>
+    </target>
+ 
+    <target name="dist" depends="clean,compile" description="generate the distribution">
+        <jar destfile="${dist}/generator.jar" basedir="${build}">
+            <fileset dir="${res}" includes="/.assets/**/*"/>
+            <manifest>
+               <attribute name="Main-Class" value="com.muldersoft.l5j.makefile.Generator"/>
+            </manifest>
+        </jar>
+    </target>
+ 
+    <target name="clean" description="clean up">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+    </target>
+</project>
