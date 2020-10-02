@@ -84,6 +84,10 @@ if not "%ERRORLEVEL%"=="0" (
 	goto:eof
 )
 
+echo ========================================================================
+echo Creating ZIP
+echo ========================================================================
+echo.
 "%~dp0.\etc\utils\win32\info-zip\zip.exe" -r -9 "%OUTFILE%" "*.*"
 
 if not "%ERRORLEVEL%"=="0" (

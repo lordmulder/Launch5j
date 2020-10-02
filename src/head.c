@@ -957,7 +957,7 @@ static BOOL detect_java_runtime_scan_liberica(const wchar_t *const key_name, con
         const DWORD value_major = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"MajorVersion", context_ptr->registry.view_64bit, 0U);
         const DWORD value_minor = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"MinorVersion", context_ptr->registry.view_64bit, 0U);
         const DWORD value_build = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"BuildNumber",  context_ptr->registry.view_64bit, 0U);
-        const ULONGLONG version = (((ULONGLONG)(value_major & 0xFFFF)) << 48) | (((ULONGLONG)(value_major & 0xFFFF)) << 16) | ((ULONGLONG)(value_build  & 0xFFFF));
+        const ULONGLONG version = (((ULONGLONG)(value_major & 0xFFFF)) << 48) | (((ULONGLONG)(value_minor & 0xFFFF)) << 16) | ((ULONGLONG)(value_build  & 0xFFFF));
         if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max) && (version > context_ptr->result.version))
         {
             const wchar_t *java_runtime_path;
@@ -982,46 +982,50 @@ static BOOL detect_java_runtime_scan_liberica(const wchar_t *const key_name, con
     return TRUE;
 }
 
-static const wchar_t *detect_java_runtime_loop(const BOOL reg_view_64bit, const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
+static const wchar_t *detect_java_runtime(const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
 {
-    typedef struct { INT32 mode; const wchar_t *path; } reg_key_t;
+    typedef struct { UINT mode; const wchar_t *path; } reg_key_t;
     static const reg_key_t REG_KEYS[] =
     {
-        { 1, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 1, L"SOFTWARE\\JavaSoft\\JRE" }, { 2, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
-        { 1, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 1, L"SOFTWARE\\JavaSoft\\JDK" }, { 2, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
-        { 3, L"SOFTWARE\\BellSoft\\Liberica"},
-        { 0, NULL }
+        { 1U, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 1U, L"SOFTWARE\\JavaSoft\\JRE" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
+        { 1U, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 1U, L"SOFTWARE\\JavaSoft\\JDK" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
+        { 3U, L"SOFTWARE\\BellSoft\\Liberica"},
+        { 0U, NULL }
     };
 
     const wchar_t *runtime_path = NULL;
     DWORD bitness = 0U;
     ULONGLONG version = 0U;
 
-    for (size_t i = 0; REG_KEYS[i].mode && REG_KEYS[i].path; ++i)
+    for (UINT i = running_on_64bit() ? 0U : 1U; i < 2U; ++i)
     {
-        java_home_t search_state =
+        const BOOL reg_view_64bit = (i < 1U);
+        for (size_t j = 0U; REG_KEYS[j].mode && REG_KEYS[j].path; ++j)
         {
-            { required_bitness, required_ver_min, required_ver_max },
-            { HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit },
-            { bitness, version, NULL }
-        };
-        switch(REG_KEYS->mode)
-        {
-        case 1:
-            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_javasoft, (ULONG_PTR)&search_state);
-            break;
-        case 2:
-            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_adoptjdk, (ULONG_PTR)&search_state);
-            break;
-        case 3:
-            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_liberica, (ULONG_PTR)&search_state);
-            break;
-        }
-        if(search_state.result.runtime_path)
-        {
-            bitness = search_state.result.bitness;
-            version = search_state.result.version;
-            SET_STRING(runtime_path, search_state.result.runtime_path);
+            java_home_t search_state =
+            {
+                { required_bitness, required_ver_min, required_ver_max },
+                { HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit },
+                { bitness, version, NULL }
+            };
+            switch(REG_KEYS[j].mode)
+            {
+            case 1U:
+                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_javasoft, (ULONG_PTR)&search_state);
+                break;
+            case 2U:
+                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_adoptjdk, (ULONG_PTR)&search_state);
+                break;
+            case 3U:
+                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_liberica, (ULONG_PTR)&search_state);
+                break;
+            }
+            if(search_state.result.runtime_path)
+            {
+                bitness = search_state.result.bitness;
+                version = search_state.result.version;
+                SET_STRING(runtime_path, search_state.result.runtime_path);
+            }
         }
     }
 
@@ -1031,23 +1035,6 @@ static const wchar_t *detect_java_runtime_loop(const BOOL reg_view_64bit, const 
     }
 
     free((void*)runtime_path);
-    return NULL;
-}
-
-static const wchar_t *detect_java_runtime(const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
-{
-    const wchar_t *java_runtime_path;
-    if (running_on_64bit())
-    {
-        if ((java_runtime_path = detect_java_runtime_loop(TRUE, required_bitness, required_ver_min, required_ver_max)))
-        {
-            return java_runtime_path;
-        }
-    }
-    if ((java_runtime_path = detect_java_runtime_loop(FALSE, required_bitness, required_ver_min, required_ver_max)))
-    {
-        return java_runtime_path;
-    }
     return NULL;
 }
 
