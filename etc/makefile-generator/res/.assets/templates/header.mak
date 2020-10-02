@@ -37,19 +37,29 @@ endif
 CFLAGS += -municode -mwindows -march=$(MARCH) -mtune=$(MTUNE)
 LDFLAGS = -lcomctl32
 
-.PHONY: all init resources build strip clean
+# ==========================================================
+# Targets
+# ==========================================================
 
-ifeq ($(DEBUG),0)
-all: strip
-else
-all: build
-endif
+.PHONY: default
+default: all
 
+.PHONY: init
 init:
 	mkdir -p bin
 	mkdir -p obj
 
+.PHONY: resources
 resources: init
 	windres -o obj/common.$(CPU_ARCH).o res/common.rc
 	windres -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
 	windres -o obj/registry.$(CPU_ARCH).o res/registry.rc
+
+.PHONY: clean
+clean: init
+	$(RM) bin/*.$(SUFFIX)
+	$(RM) obj/*.o
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Binaries
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

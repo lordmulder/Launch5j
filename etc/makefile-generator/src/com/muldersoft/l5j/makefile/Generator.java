@@ -32,31 +32,34 @@ public class Generator {
     private final static Pattern RTRIM = Pattern.compile("\\s+$");
 
     public static void main(String[] args) throws IOException {
-        final List<String> filenNames = new ArrayList<String>();
+        final List<String> targets = new ArrayList<String>();
         final PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8.name());
 
         outputTemplate(out, "header");
 
-        out.println("build: init resources");
         for (int wrapped = 0; wrapped < 2; ++wrapped) {
             for (int registry = 0; registry < 2; ++registry) {
                 for (int stayAlive = 1; stayAlive > -1; --stayAlive) {
                     for (int enableSplash = 1; enableSplash > -1; --enableSplash) {
                         for (int encArgs = 1; encArgs > -1; --encArgs) {
-                            out.println(generateCommand(filenNames, wrapped, registry, stayAlive, enableSplash, encArgs));
+                            out.println(generateCommand(targets, wrapped, registry, stayAlive, enableSplash, encArgs));
                         }
                     }
                 }
             }
         }
 
-        out.println("\nstrip: build");
-        for (final String fileName : filenNames) {
-            out.printf("\tstrip %s\n", fileName);
-        }
-
+        out.println("# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        out.println("# ALL");
+        out.println("# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         out.println();
-        outputTemplate(out, "footer");
+        
+        out.println(".PHONY: all");
+        out.print("all:");
+        for(final String target: targets) { 
+            out.printf(" \\\n  %s", target);
+        }
+        out.println("\n");
     }
 
     private static void outputTemplate(final PrintStream out, final String name) throws IOException {
@@ -87,32 +90,37 @@ public class Generator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> outNames, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
-        final String fileName = String.format("bin/launch5j_$(CPU_ARCH)%s.exe",
-                generateNameSuffix(wrapped, registry, stayAlive, enableSplash, encArgs));
-        final StringBuilder cmdLine = new StringBuilder(
-                String.format("\t$(CC) $(CFLAGS) " +
+    private static String generateCommand(final List<String> targets, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
+        final String nameSuffix = generateNameSuffix(wrapped, registry, stayAlive, enableSplash, encArgs);
+        final String targetName = "l5j" + nameSuffix;
+        targets.add(targetName);
+        final StringBuilder cmdLine = new StringBuilder();
+        cmdLine.append(String.format(".PHONY: %s\n", targetName));
+        cmdLine.append(String.format("%s: resources\n", targetName));
+        cmdLine.append(String.format("\t$(CC) $(CFLAGS) " +
                         "-DL5J_JAR_FILE_WRAPPED=%d " +
                         "-DL5J_DETECT_REGISTRY=%d " +
                         "-DL5J_STAY_ALIVE=%d " +
                         "-DL5J_ENABLE_SPLASH=%d " +
                         "-DL5J_ENCODE_ARGS=%d " +
-                        "-o %s " +
+                        "-o bin/launch5j_$(CPU_ARCH)%s.exe " +
                         "src/head.c obj/common.$(CPU_ARCH).o",
                         wrapped,
                         registry,
                         stayAlive,
                         enableSplash,
                         encArgs,
-                        fileName));
+                        nameSuffix));
         if (enableSplash > 0) {
             cmdLine.append(" obj/splash_screen.$(CPU_ARCH).o");
         }
         if (registry > 0) {
             cmdLine.append(" obj/registry.$(CPU_ARCH).o");
         }
-        cmdLine.append(" $(LDFLAGS)");
-        outNames.add(fileName);
+        cmdLine.append(" $(LDFLAGS)\n");
+        cmdLine.append("ifeq ($(DEBUG),0)\n");
+        cmdLine.append(String.format("\tstrip bin/launch5j_$(CPU_ARCH)%s.exe\n", nameSuffix));
+        cmdLine.append("endif\n");
         return cmdLine.toString();
     }
 
