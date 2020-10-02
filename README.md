@@ -50,6 +50,9 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 * **`nosplash`**  
   Does **not** display a splash screen while the application is launching; default variant *does* display a splash screen while the application is launching &ndash; will be hidden as soon as application window shows up.
 
+* **`noenc`**  
+  Does **not** apply [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) to the given command-line arguments; default variant *does* apply URL encoding to all given command-line arguments in order to work around a long standing bug in Java.
+
 ## Platforms
 
 All of the above Launch5j variants are available as `x86` (32-Bit) and `x64` (64-Bit) executables. The `x86` (32-Bit) executables can run on *32-Bit* and *64-Bit* versions of Microsoft&reg; Windows&trade;, whereas the `x64` (64-Bit) executables require a *64-Bit* version of Microsoft&reg; Windows&trade;. Consequently, it is generally recommended to distribute the `x86` (32-Bit) launcher executable. Please note that this does **not** restrict the “bitness” of the JRE that can be used. Even the `x86` (32-Bit) launcher executable is perfectly able to detect and launch a *64-Bit* JRE &ndash; if it is available.
@@ -130,28 +133,29 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
 # Unicode command-line arguments
 
-There is a *long-standing* bug in Java (on the Windows&trade; platform), which causes *Unicode* command-line arguments to be “mangled”. More specifically, even if the Unicode command-line arguments are properly passed to the Java executable (`java.exe`), they are **not** forwarded correctly to the `main()` method of your Java program!
+There is a *long-standing* bug in Java on the Windows&trade; platform, which causes *Unicode* command-line arguments to be “mangled”. Even if the Unicode command-line arguments are properly passed to the Java executable (`java.exe`), they are **not** passed trough correctly to the `main()` method of your Java program! This problem can be reproduced in *all* Java versions ranging from Java 7 (1.7) up to and including the latest Java 15, as of October 2020.
 
-Instead, any characters that can **not** be represented in the computer's *local* ANSI codepage (pretty much any *non*-ASCII characters) are replaced by **`?`** characters. The cause of the problem apparently is that the “native” C code of the Java executable still uses the *legacy* `main()` entry point instead of the [`wmain()`](https://docs.microsoft.com/en-us/cpp/c-language/using-wmain?view=vs-2015) entry point. The latter is the modern Unicode-aware entry point that applications written for *Windows 2000 and later* **should** be using &ndash; ouch!
+More specifically, Java replaces any characters in the given command-line arguments that can **not** be represented in the computer's *local* ANSI codepage (i.e. pretty much any *non*-ASCII characters) with **`?`** characters. The cause of the problem apparently is that the “native” C code of the Java executable still uses the *legacy* `main()` entry point instead of the [`wmain()`](https://docs.microsoft.com/en-us/cpp/c-language/using-wmain?view=vs-2015) entry point; the latter is the modern Unicode-aware entry point &ndash; which **should** be used by programs written for *Windows 2000 or later*. Why this has **not** been fixed in 20 years is beyond my understanding.
 
-As a workaround, Launch5j will convert the given Unicode command-line arguments to the UTF-8 format and then apply [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) on top of that. This ensures that *only* pure ASCII characters are passed to the Java executable, thus preventing the command-line from being “mangled”. Still the original Unicode arguments can be reconstructed.
+As a workaround for the current situation in Java, Launch5j will (by default) convert the given Unicode command-line arguments to the [UTF-8](https://en.wikipedia.org/wiki/UTF-8) format and then apply the [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) scheme. This ensures that *only* pure ASCII characters need to be passed to the Java executable, thus preventing the command-line arguments from being “mangled”. Still the original Unicode command-line arguments are preserved and *can* be reconstructed in the Java code.
 
-The only downside is that a bit of additional processing will be required in the application code:
+The only downside is that additional processing is required in the application code:
 
-```
+```java
 public class YourMainClass {
   public static void main(final String[] args) {
-    decodeCommandlineArgs(args);
+    initCommandlineArgs(args);
     /* your application code goes here! */
   }
 
-  private static void decodeCommandlineArgs(final String[] argv) {
+  private static void initCommandlineArgs(final String[] argv) {
     if (System.getProperty("l5j.pid") == null) {
-      return; /* nothing to do, if not started by L5j */
+      return; /*nothing to do*/
     }
+    final String utf8enc = StandardCharsets.UTF_8.name();
     for (int i = 0; i < argv.length; ++i) {
       try {
-        argv[i] = URLDecoder.decode(argv[i], StandardCharsets.UTF_8);
+        argv[i] = URLDecoder.decode(argv[i], utf8enc);
       } catch (Exception e) { }
     }
   }
