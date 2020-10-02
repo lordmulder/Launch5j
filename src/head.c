@@ -509,17 +509,50 @@ static DWORD get_registry_view(const BOOL view_64bit)
 #endif
 }
 
+static BOOL reg_key_exists(const HKEY root_key, const wchar_t *const path, const BOOL view_64bit)
+{
+    HKEY key = NULL;
+    if (RegOpenKeyEx(root_key, path, 0U, KEY_QUERY_VALUE | get_registry_view(view_64bit), &key) == ERROR_SUCCESS)
+    {
+        RegCloseKey(key);
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+static DWORD reg_read_dword(const HKEY root_key, const wchar_t *const path, const wchar_t *const name, const BOOL view_64bit, const DWORD error_value)
+{
+    HKEY key = NULL;
+    if (RegOpenKeyEx(root_key, path, 0U, KEY_QUERY_VALUE | get_registry_view(view_64bit), &key) != ERROR_SUCCESS)
+    {
+        return FALSE;
+    }
+    
+    DWORD value = 0U, type = 0U, size = sizeof(DWORD);
+    LSTATUS status = RegQueryValueExW(key, name, NULL, &type, (LPBYTE)&value, &size);
+    if ((status != ERROR_SUCCESS) || (size != sizeof(DWORD)) || ((type != REG_DWORD) && (type != REG_DWORD_BIG_ENDIAN)))
+    {
+        RegCloseKey(key);
+        return error_value;
+    }
+
+    RegCloseKey(key);
+    return value;
+}
+
+
 static wchar_t *reg_read_string(const HKEY root_key, const wchar_t *const path, const wchar_t *const name, const BOOL view_64bit)
 {
     HKEY key = NULL;
-    if(RegOpenKeyEx(root_key, path, 0U, KEY_QUERY_VALUE | get_registry_view(view_64bit), &key) != ERROR_SUCCESS)
+    if (RegOpenKeyEx(root_key, path, 0U, KEY_QUERY_VALUE | get_registry_view(view_64bit), &key) != ERROR_SUCCESS)
     {
         return FALSE;
     }
     
     DWORD buffer_len = MAX_PATH;
     BYTE *buffer = (BYTE*) malloc(sizeof(wchar_t) * buffer_len);
-    if(!buffer)
+    if (!buffer)
     {
         RegCloseKey(key);
         return NULL;
@@ -562,18 +595,6 @@ static wchar_t *reg_read_string(const HKEY root_key, const wchar_t *const path, 
 
     RegCloseKey(key);
     return (wchar_t*) buffer;
-}
-
-static DWORD reg_read_string_uint32(const HKEY root_key, const wchar_t *const path, const wchar_t *const name, const BOOL view_64bit)
-{
-    DWORD value = 0;
-    const wchar_t *const string = reg_read_string(root_key, path, name, view_64bit);
-    if(NOT_EMPTY(string))
-    {
-        value = wcstoul(string, NULL, 10);
-    }
-    free((void*)string);
-    return value;
 }
 
 static BOOL reg_enum_subkeys(const HKEY root_key, const wchar_t *const path, const BOOL view_64bit, const reg_enum_callback_t callback, const ULONG_PTR user_data)
@@ -810,52 +831,52 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
 
 static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_out, const HKEY root_key, const wchar_t *const full_reg_path, const BOOL reg_view_64bit)
 {
-    static const wchar_t *const REL_PATHS[] =
-    {
-        L"%s\\jre\\bin\\javaw.exe", L"%s\\bin\\javaw.exe", NULL
-    };
+    static const wchar_t *const JAVA_REG_NAMES[] = { L"JavaHome", L"Path", L"InstallationPath", NULL };
+    static const wchar_t *const JAVA_EXE_PATHS[] = { L"%s\\jre\\bin\\javaw.exe", L"%s\\bin\\javaw.exe", NULL };
 
     *executable_path_out = NULL;
     DWORD result = 0U;
 
-    wchar_t *const java_home_path = reg_read_string(root_key, full_reg_path, L"JavaHome", reg_view_64bit);
-    trim_trailing_separator(wcstrim(java_home_path));
-
-    if (NOT_EMPTY(java_home_path))
+    for (size_t i = 0U; JAVA_REG_NAMES[i] && (!result); ++i)
     {
-        for (size_t i = 0U; REL_PATHS[i]; ++i)
+        wchar_t *const java_home_path = reg_read_string(root_key, full_reg_path, JAVA_REG_NAMES[i], reg_view_64bit);
+        if(java_home_path)
         {
-            const wchar_t *const javaw_executable_path = aswprintf(REL_PATHS[i], java_home_path);
-            if (javaw_executable_path)
+            trim_trailing_separator(wcstrim(java_home_path));
+            if (NOT_EMPTY(java_home_path))
             {
-                const wchar_t *const absolute_executable_path = get_absolute_path(javaw_executable_path);
-                if (absolute_executable_path)
+                for (size_t j = 0U; JAVA_EXE_PATHS[j] && (!result); ++j)
                 {
-                    const DWORD bitness = file_is_executable(absolute_executable_path);
-                    if (bitness > 0U)
+                    const wchar_t *const javaw_executable_path = aswprintf(JAVA_EXE_PATHS[j], java_home_path);
+                    if (javaw_executable_path)
                     {
-                        *executable_path_out = absolute_executable_path;
-                        result = bitness;
-                    }
-                    else
-                    {
-                        free((void*)absolute_executable_path);
+                        const wchar_t *const absolute_executable_path = get_absolute_path(javaw_executable_path);
+                        if (absolute_executable_path)
+                        {
+                            const DWORD bitness = file_is_executable(absolute_executable_path);
+                            if (bitness > 0U)
+                            {
+                                MessageBoxW(NULL, full_reg_path, L"Accepted!", MB_SYSTEMMODAL);
+                                *executable_path_out = absolute_executable_path;
+                                result = bitness;
+                            }
+                            else
+                            {
+                                free((void*)absolute_executable_path);
+                            }
+                        }
+                        free((void*)javaw_executable_path);
                     }
                 }
-                free((void*)javaw_executable_path);
             }
-            if(result > 0U)
-            {
-                break; /*found executable*/
-            }
+            free(java_home_path);
         }
     }
 
-    free(java_home_path);
     return result;
 }
 
-static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const ULONG_PTR user_data)
+static BOOL detect_java_runtime_scan_javasoft(const wchar_t *const key_name, const ULONG_PTR user_data)
 {
     java_home_t *const context_ptr = (java_home_t*) user_data;
     ULONGLONG version = parse_java_version(key_name);
@@ -887,28 +908,116 @@ static BOOL detect_java_runtime_callback(const wchar_t *const key_name, const UL
     return TRUE;
 }
 
+static BOOL detect_java_runtime_scan_adoptjdk(const wchar_t *const key_name, const ULONG_PTR user_data)
+{
+    static const wchar_t *const JVM_NATURE[] = { L"hotspot", L"openj9", NULL };
+
+    java_home_t *const context_ptr = (java_home_t*) user_data;
+    ULONGLONG version = parse_java_version(key_name);
+
+    if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max) && (version > context_ptr->result.version))
+    {
+        for (size_t i = 0; JVM_NATURE[i]; ++i)
+        {
+            const wchar_t *const full_reg_path = aswprintf(L"%s\\%s\\%s\\MSI", context_ptr->registry.base_path, key_name, JVM_NATURE[i]);
+            if (full_reg_path)
+            {
+                if (reg_key_exists(context_ptr->registry.root_key, full_reg_path, context_ptr->registry.view_64bit))
+                {
+                    const wchar_t *java_runtime_path;
+                    const DWORD bitness = detect_java_runtime_verify(&java_runtime_path, context_ptr->registry.root_key, full_reg_path, context_ptr->registry.view_64bit);
+                    if (bitness > 0U)
+                    {
+                        if (((context_ptr->required.bitness == 0U) || (bitness == context_ptr->required.bitness)) && (bitness >= context_ptr->result.bitness))
+                        {
+                            context_ptr->result.bitness = bitness;
+                            context_ptr->result.version = version;
+                            SET_STRING(context_ptr->result.runtime_path, java_runtime_path);
+                        }
+                        else
+                        {
+                            free((void*)java_runtime_path);
+                        }
+                    }
+                }
+                free((void*)full_reg_path);
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL detect_java_runtime_scan_liberica(const wchar_t *const key_name, const ULONG_PTR user_data)
+{
+    java_home_t *const context_ptr = (java_home_t*) user_data;
+
+    const wchar_t *const full_reg_path = aswprintf(L"%s\\%s", context_ptr->registry.base_path, key_name);
+    if (full_reg_path)
+    {
+        const DWORD value_major = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"MajorVersion", context_ptr->registry.view_64bit, 0U);
+        const DWORD value_minor = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"MinorVersion", context_ptr->registry.view_64bit, 0U);
+        const DWORD value_build = reg_read_dword(context_ptr->registry.root_key, full_reg_path, L"BuildNumber",  context_ptr->registry.view_64bit, 0U);
+        const ULONGLONG version = (((ULONGLONG)(value_major & 0xFFFF)) << 48) | (((ULONGLONG)(value_major & 0xFFFF)) << 16) | ((ULONGLONG)(value_build  & 0xFFFF));
+        if ((version >= context_ptr->required.ver_min) && (version < context_ptr->required.ver_max) && (version > context_ptr->result.version))
+        {
+            const wchar_t *java_runtime_path;
+            const DWORD bitness = detect_java_runtime_verify(&java_runtime_path, context_ptr->registry.root_key, full_reg_path, context_ptr->registry.view_64bit);
+            if (bitness > 0U)
+            {
+                if (((context_ptr->required.bitness == 0U) || (bitness == context_ptr->required.bitness)) && (bitness >= context_ptr->result.bitness))
+                {
+                    context_ptr->result.bitness = bitness;
+                    context_ptr->result.version = version;
+                    SET_STRING(context_ptr->result.runtime_path, java_runtime_path);
+                }
+                else
+                {
+                    free((void*)java_runtime_path);
+                }
+            }
+        }
+        free((void*)full_reg_path);
+    }
+
+    return TRUE;
+}
+
 static const wchar_t *detect_java_runtime_loop(const BOOL reg_view_64bit, const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
 {
-    static const wchar_t *const REG_KEY_PATHS[] =
+    typedef struct { INT32 mode; const wchar_t *path; } reg_key_t;
+    static const reg_key_t REG_KEYS[] =
     {
-        L"SOFTWARE\\JavaSoft\\Java Runtime Environment", L"SOFTWARE\\JavaSoft\\JRE",
-        L"SOFTWARE\\JavaSoft\\Java Development Kit",     L"SOFTWARE\\JavaSoft\\JDK",
-        NULL /*EOL*/
+        { 1, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 1, L"SOFTWARE\\JavaSoft\\JRE" }, { 2, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
+        { 1, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 1, L"SOFTWARE\\JavaSoft\\JDK" }, { 2, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
+        { 3, L"SOFTWARE\\BellSoft\\Liberica"},
+        { 0, NULL }
     };
 
     const wchar_t *runtime_path = NULL;
     DWORD bitness = 0U;
     ULONGLONG version = 0U;
 
-    for (size_t i = 0; REG_KEY_PATHS[i]; ++i)
+    for (size_t i = 0; REG_KEYS[i].mode && REG_KEYS[i].path; ++i)
     {
         java_home_t search_state =
         {
             { required_bitness, required_ver_min, required_ver_max },
-            { HKEY_LOCAL_MACHINE, REG_KEY_PATHS[i], reg_view_64bit },
+            { HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit },
             { bitness, version, NULL }
         };
-        reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEY_PATHS[i], reg_view_64bit, detect_java_runtime_callback, (ULONG_PTR)&search_state);
+        switch(REG_KEYS->mode)
+        {
+        case 1:
+            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_javasoft, (ULONG_PTR)&search_state);
+            break;
+        case 2:
+            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_adoptjdk, (ULONG_PTR)&search_state);
+            break;
+        case 3:
+            reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[i].path, reg_view_64bit, detect_java_runtime_scan_liberica, (ULONG_PTR)&search_state);
+            break;
+        }
         if(search_state.result.runtime_path)
         {
             bitness = search_state.result.bitness;
@@ -1216,7 +1325,6 @@ static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd,
         if (result == IDOK)
         {
             ShellExecuteW(hwnd, NULL, jre_download_ptr, NULL, NULL, SW_SHOW);
-            show_message(hwnd, MB_ICONWARNING | MB_OKCANCEL | MB_TOPMOST, title, L"When installing OpenJDK on your machine, please be sure to enable \x201cJavaSoft (Oracle) registry keys\x201d, otherwise we will not be able to find your Java Runtime Environment !!!");
         }
     }
     free(version_str);
