@@ -16,7 +16,7 @@ REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set "ISO_DATE="
 
-for /F "usebackq tokens=1" %%a in (`start /WAIT /B "" "%~dp0.\etc\utils\win32\core-utils\date.exe" +"%%Y-%%m-%%d"`) do (
+for /F "usebackq tokens=1" %%a in (`start /WAIT /B "" "%~dp0.\etc\utils\core-utils\date.exe" +"%%Y-%%m-%%d"`) do (
 	set "ISO_DATE=%%a"
 )
 
@@ -69,20 +69,23 @@ REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mkdir "%~dp0.\out\~package"
 mkdir "%~dp0.\out\~package\x64"
 
+copy /Y "%~dp0.\*.txt"                 "%~dp0.\out\~package"
 copy /Y "%~dp0.\bin\launch5j_x86*.exe" "%~dp0.\out\~package"
 copy /Y "%~dp0.\bin\launch5j_x64*.exe" "%~dp0.\out\~package\x64"
 
+
 mkdir "%~dp0.\out\~package\etc"
-mkdir "%~dp0.\out\~package\etc\example"
 mkdir "%~dp0.\out\~package\etc\img"
+mkdir "%~dp0.\out\~package\etc\style"
+mkdir "%~dp0.\out\~package\example"
 
-copy /Y "%~dp0.\*.txt" "%~dp0.\out\~package"
-copy /Y "%~dp0.\etc\img\*.png" "%~dp0.\out\~package\etc\img"
+copy /Y "%~dp0.\etc\img\*.png"   "%~dp0.\out\~package\etc\img"
+copy /Y "%~dp0.\etc\style\*.css" "%~dp0.\out\~package\etc\style"
 
-copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\etc\example\dist\example.jar" "%~dp0.\out\~package\etc\example\example.exe"
-copy /Y "%~dp0.\etc\example\src\com\muldersoft\l5j\example\Main.java" "%~dp0.\out\~package\etc\example\example.java"
+copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\src\example\dist\example.jar" "%~dp0.\out\~package\example\example.exe"
+copy /Y "%~dp0.\src\example\src\com\muldersoft\l5j\example\Main.java" "%~dp0.\out\~package\example\example.java"
 
-"%PANDOC_DIR%\pandoc.exe" -f markdown-implicit_figures -t html -T "Launch5j" --toc "%~dp0.\README.md" > "%~dp0.\out\~package\README.html"
+"%PANDOC_DIR%\pandoc.exe" -f markdown-implicit_figures -t html5 --standalone --ascii --toc --toc-depth=2 --css="etc/style/gh-pandoc.css" "%~dp0.\README.yaml" "%~dp0.\README.md" > "%~dp0.\out\~package\README.html"
 
 attrib +R "%~dp0.\out\~package\*.*" /S
 
@@ -101,7 +104,7 @@ echo ========================================================================
 echo Creating ZIP
 echo ========================================================================
 echo.
-"%~dp0.\etc\utils\win32\info-zip\zip.exe" -r -9 "%OUTFILE%" "*.*"
+"%~dp0.\etc\utils\info-zip\zip.exe" -r -9 "%OUTFILE%" "*.*"
 
 if not "%ERRORLEVEL%"=="0" (
 	pause

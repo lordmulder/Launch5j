@@ -50,7 +50,7 @@ echo Build example
 echo ========================================================================
 echo.
 set "PATH=%ANT_HOME%\bin;%JAVA_HOME%\bin;%PATH%"
-call "%ANT_HOME%\bin\ant.bat" -f "%~dp0.\etc\example\build.xml"
+call "%ANT_HOME%\bin\ant.bat" -f "%~dp0.\src\example\build.xml"
 
 echo.
 echo BUILD COMPLETED.

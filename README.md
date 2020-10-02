@@ -1,7 +1,6 @@
----
-title: "![Launch5j](etc/img/logo.png)"
-subtitle: "**Java JAR wrapper for creating Windows native executables**"
----
+![Launch5j](etc/img/logo.png)
+
+**Java JAR file wrapper for creating Windows native executables**
 
 # Introduction
 
@@ -45,6 +44,11 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 
 * **`registry`**  
   Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `/runtime` path relative to the location of the executable launcher.
+  
+  At this time, the following Java distributions can be detected from the registry:
+  - [Oracle JDK (JavaSoft)](https://www.oracle.com/java/technologies/javase-downloads.html)
+  - [AdoptOpenJDK](https://adoptopenjdk.net/)
+  - [Liberica OpenJDK](https://bell-sw.com/)
 
 * **`nowait`**  
   Does **not** keep the launcher executable alive while the application is running; default variant keeps the launcher executable alive until the application terminates and then forwards the application's exit code.
@@ -66,7 +70,7 @@ All of the above Launch5j variants are available as `x86` (32-Bit) and `x64` (64
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
-It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
+It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN&nbsp;Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
 
 ![Resource Hacker](etc/img/reshacker-example.png)
 
@@ -172,7 +176,7 @@ public class YourMainClass {
 
 ![Unicode command-line arguments](etc/img/unicode-args.png)
 
-## The JAR file name
+## JAR file name
 
 Be aware that the same problem of “mangled” Unicode characters applies when the path of the JAR file is passed to the Java executable. In other words, the Java runtime *fails* to execute any JAR files whose path &ndash; file name or directory name anywhere in the path &ndash; contains any Unicode characters that cannot be represented in the computer's *local* ANSI codepage! Unfortunately, we can **not** encode the path of the JAR file as we do with the other command-line arguments, because the Jave executable requires the path of the JAR file to be passed in a non-encoded form.
 
