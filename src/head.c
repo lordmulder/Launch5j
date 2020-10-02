@@ -42,6 +42,9 @@
 #ifndef L5J_STAY_ALIVE
 #error  L5J_STAY_ALIVE flag is *not* defined!
 #endif
+#ifndef L5J_ENCODE_ARGS
+#error  L5J_ENCODE_ARGS flag is *not* defined!
+#endif
 #ifndef L5J_WAIT_FOR_WINDOW
 #define L5J_WAIT_FOR_WINDOW 1
 #endif
@@ -1011,6 +1014,7 @@ static wchar_t *encode_commandline_args(const int argc, const LPWSTR *const argv
 
 static const wchar_t *encode_commandline(const wchar_t *const command_line)
 {
+#if L5J_ENCODE_ARGS
     const wchar_t * encoded = NULL;
     if (NOT_EMPTY(command_line))
     {
@@ -1023,6 +1027,9 @@ static const wchar_t *encode_commandline(const wchar_t *const command_line)
         }
     }
     return encoded;
+#else
+    return wcsdup(command_line);
+#endif
 }
 
 /* ======================================================================== */
@@ -1405,18 +1412,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     }
 #else
     jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
+    const wchar_t *const jre_relative_path_offset = AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : NULL;
+    if (!(java_runtime_path = aswprintf(L"%s\\%s", executable_directory, NOT_EMPTY(jre_relative_path_offset) ? jre_relative_path_offset: JRE_RELATIVE_PATH_DEFAULT)))
     {
-        const wchar_t *const relative_path_ptr = AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : NULL;
-        if (!(java_runtime_path = aswprintf(L"%s\\%s", executable_directory, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT)))
-        {
-            show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
-            goto cleanup;
-        }
-        if (!file_is_executable(java_runtime_path))
-        {
-            show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%s\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
-            goto cleanup;
-        }
+        show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
+        goto cleanup;
+    }
+    if (!file_is_executable(java_runtime_path))
+    {
+        show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%s\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
+        goto cleanup;
     }
 #endif
 
@@ -1433,14 +1438,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
         const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
             ? aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s %s" : L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, ext_args_encoded, cmd_args_encoded)
-            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s %s"     : L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s",     java_runtime_path, pid,                 jarfile_ptr, ext_args_encoded, cmd_args_encoded);
+            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s %s"    : L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s",    java_runtime_path, pid,                 jarfile_ptr, ext_args_encoded, cmd_args_encoded);
     }
     else
     {
         const wchar_t *const jarfile_ptr = NOT_EMPTY(jarfile_short_path) ? jarfile_short_path : jarfile_path;
         command_line = AVAILABLE(jvm_extra_args)
             ? aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\" %s" : L"\"%s\" %s -Dl5j.pid=%u -jar \"%s\"", java_runtime_path, jvm_extra_args, pid, jarfile_ptr, cmd_args_encoded)
-            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s"     : L"\"%s\" -Dl5j.pid=%u -jar \"%s\"",     java_runtime_path, pid,                 jarfile_ptr, cmd_args_encoded);
+            : aswprintf(NOT_EMPTY(cmd_args_encoded) ? L"\"%s\" -Dl5j.pid=%u -jar \"%s\" %s"    : L"\"%s\" -Dl5j.pid=%u -jar \"%s\"",    java_runtime_path, pid,                 jarfile_ptr, cmd_args_encoded);
     }
 
     // Make sure command-line was created
