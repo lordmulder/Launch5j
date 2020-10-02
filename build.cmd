@@ -3,12 +3,30 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 set "MSYS2_DIR=C:\msys64"
+set "JAVA_HOME=C:\Java\jdk-8.0.265.01-hotspot"
+set "ANT_HOME=C:\Program Files (x86)\Ant"
 
 if not exist "%MSYS2_DIR%\msys2_shell.cmd" (
 	echo MSYS2 SHELL not found. Please check MSYS2_DIR and try again^^!
 	pause
 	goto:eof
 )
+
+if not exist "%JAVA_HOME%\bin\java.exe" (
+	echo Java not found. Please check JAVA_HOME and try again^^!
+	pause
+	goto:eof
+)
+
+if not exist "%ANT_HOME%\bin\ant.bat" (
+	echo Ant not found. Please check ANT_HOME and try again^^!
+	pause
+	goto:eof
+)
+
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+REM Build!
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 echo ========================================================================
 echo Clean
@@ -23,11 +41,33 @@ for %%m in (32,64) do (
 	echo ========================================================================
 	echo.
 	call "%MSYS2_DIR%\msys2_shell.cmd" -mingw%%m -no-start -defterm -where "%~dp0" -c "make -B -j8"
-	if not "!ERRORLEVEL!"=="0" goto:build_completed
+	if not "!ERRORLEVEL!"=="0" goto:BuildHasFailed
 	echo.
 )
 
-echo ALL IS DONE.
+echo ========================================================================
+echo Build example
+echo ========================================================================
+echo.
+set "PATH=%ANT_HOME%\bin;%JAVA_HOME%\bin;%PATH%"
+call "%ANT_HOME%\bin\ant.bat" -f "%~dp0.\etc\example\build.xml"
 
-:build_completed
-pause
+echo.
+echo BUILD COMPLETED.
+echo.
+
+if not "%MAKE_NONINTERACTIVE%"=="1" pause
+exit /B 0
+
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+REM Failed
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:BuildHasFailed
+
+echo.
+echo BUILD HAS FAILED ^^!^^!^^!
+echo.
+
+if not "%MAKE_NONINTERACTIVE%"=="1" pause
+exit /B 1

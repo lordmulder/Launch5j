@@ -856,7 +856,6 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
                             const DWORD bitness = file_is_executable(absolute_executable_path);
                             if (bitness > 0U)
                             {
-                                MessageBoxW(NULL, full_reg_path, L"Accepted!", MB_SYSTEMMODAL);
                                 *executable_path_out = absolute_executable_path;
                                 result = bitness;
                             }
