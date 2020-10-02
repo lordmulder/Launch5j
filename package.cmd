@@ -1,5 +1,14 @@
 @echo off
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
+
+set "PANDOC_DIR=C:\Program Files (x86)\Pandoc"
+
+if not exist "%PANDOC_DIR%\pandoc.exe" (
+	echo Pandoc not found. Please check PANDOC_DIR and try again^^!
+	pause
+	goto:eof
+)
 
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 REM Get current date
@@ -58,18 +67,22 @@ REM Copy binaries
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 mkdir "%~dp0.\out\~package"
-mkdir "%~dp0.\out\~package\example"
-mkdir "%~dp0.\out\~package\x86"
 mkdir "%~dp0.\out\~package\x64"
 
-copy /Y "%~dp0.\*.txt" "%~dp0.\out\~package"
-copy /Y "%~dp0.\*.md"  "%~dp0.\out\~package"
-
-copy /Y "%~dp0.\bin\launch5j_x86*.exe" "%~dp0.\out\~package\x86"
+copy /Y "%~dp0.\bin\launch5j_x86*.exe" "%~dp0.\out\~package"
 copy /Y "%~dp0.\bin\launch5j_x64*.exe" "%~dp0.\out\~package\x64"
 
-copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\etc\example\dist\example.jar" "%~dp0.\out\~package\example\example.exe"
-copy /Y "%~dp0.\etc\example\src\com\muldersoft\l5j\example\Main.java" "%~dp0.\out\~package\example\example.java"
+mkdir "%~dp0.\out\~package\etc"
+mkdir "%~dp0.\out\~package\etc\example"
+mkdir "%~dp0.\out\~package\etc\img"
+
+copy /Y "%~dp0.\*.txt" "%~dp0.\out\~package"
+copy /Y "%~dp0.\etc\img\*.png" "%~dp0.\out\~package\etc\img"
+
+copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\etc\example\dist\example.jar" "%~dp0.\out\~package\etc\example\example.exe"
+copy /Y "%~dp0.\etc\example\src\com\muldersoft\l5j\example\Main.java" "%~dp0.\out\~package\etc\example\example.java"
+
+"%PANDOC_DIR%\pandoc.exe" -f markdown-implicit_figures -t html -T "Launch5j" --toc "%~dp0.\README.md" > "%~dp0.\out\~package\README.html"
 
 attrib +R "%~dp0.\out\~package\*.*" /S
 

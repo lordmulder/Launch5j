@@ -1,11 +1,12 @@
-![Launch5j](etc/logo.png)  
-
-**Java JAR wrapper for creating Windows native executables  
-created by LoRd_MuldeR &lt;<mulder2@gmx.de>&gt;**
+---
+title: "![Launch5j](etc/img/logo.png)"
+subtitle: "**Java JAR wrapper for creating Windows native executables**"
+---
 
 # Introduction
 
 **Launch5j** is a reimagination of “Launch4j”, *with full Unicode support*. This is a tool for wrapping Java applications distributed as JARs in lightweight Windows native executables. The executable can be configured to search for a certain JRE version or use a bundled one. The wrapper also provides better user experience through an application icon, a native pre-JRE splash screen, and a Java download page in case the appropriate JRE cannot be found.
+
 
 # Usage
 
@@ -34,6 +35,7 @@ There currently are two different ways to use Launch5j with your application cod
 
   **Warning:** Code signing, as with Microsoft&reg;'s `SignTool`, probably does **not** work with the “wrapped” executable file! If code signing is a requirement, please use a *separate* JAR file and just sing the launcher executable.
 
+
 # Variants
 
 Launch5j executables come in a number of variants, allowing you to pick the most suitable one for you project:
@@ -59,13 +61,14 @@ All of the above Launch5j variants are available as `x86` (32-Bit) and `x64` (64
 
 *Note:* Launch5j has been tested to work correctly on Windows XP (Service Pack 2), or a compatible newer version.
 
+
 # Customizations
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
 It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
 
-![reshack](etc/reshacker-example.png)
+![Resource Hacker](etc/img/reshacker-example.png)
 
 ## Additional options
 
@@ -131,6 +134,7 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
 *Note:* We use the convention that the default resource string value `"?"` is used to represent an “undefined” value, because resource strings cannot be empty. You can replace the default value as needed!
 
+
 # Unicode command-line arguments
 
 There is a *long-standing* bug in Java on the Windows&trade; platform, which causes *Unicode* command-line arguments to be “mangled”. Even if the Unicode command-line arguments are properly passed to the Java executable (`java.exe`), they are **not** passed trough correctly to the `main()` method of your Java program! This problem can be reproduced in *all* Java versions ranging from Java 7 (1.7) up to and including the latest Java 15, as of October 2020.
@@ -164,15 +168,31 @@ public class YourMainClass {
 }
 ```
 
+***Example:***
+
+![Unicode command-line arguments](etc/img/unicode-args.png)
+
 ## The JAR file name
 
 Be aware that the same problem of “mangled” Unicode characters applies when the path of the JAR file is passed to the Java executable. In other words, the Java runtime *fails* to execute any JAR files whose path &ndash; file name or directory name anywhere in the path &ndash; contains any Unicode characters that cannot be represented in the computer's *local* ANSI codepage! Unfortunately, we can **not** encode the path of the JAR file as we do with the other command-line arguments, because the Jave executable requires the path of the JAR file to be passed in a non-encoded form.
 
 Therefore, it is recommended to ***only*** use ASCII characters in the name of your JAR file and in the “install” path !!!
 
+
+# Source code
+
+The source code of **Launch5j** is available from the official Git mirrors at:
+
+* `git clone https://github.com/lordmulder/Launch5j.git`
+
+* `git clone https://bitbucket.org/muldersoft/launch5j.git`
+
+* `git clone https://gitlab.com/lord_mulder/launch5j.git`
+
+
 # Build instructions
 
-In order to build Launch5j from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
+In order to build **Launch5j** from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
 
 Probably the most simple way to set up the required build environment is by installing the [**MSYS2**](https://www.msys2.org/) distribution, which includes *GCC* (Mingw-w64) as well as all the required build tools, such as *Bash* and *GNU make*.
 
@@ -188,10 +208,19 @@ Once the build environment has been set up, just run the provided Makefile:
 
 *Note:* In order to create 32-Bit or 64-Bit binaries, use the `mingw32` or `mingw64` sub-system of MSYS2, respectively.
 
+
+# Contact
+
+**Launch5j** was created by LoRd_MuldeR &lt;<mulder2@gmx.de>&gt;.
+
+For help and support, please visit:  
+<https://github.com/lordmulder/Launch5j/issues>
+
 # Acknowledgment
 
 This project is partly inspired by the “Launch4j” project, even though it has been re-written from scratch:  
 <https://sourceforge.net/p/launch4j/>
+
 
 # License
 
