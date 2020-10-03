@@ -14,11 +14,15 @@
 MACHINE := $(patsubst %-w64-mingw32,[%],$(shell $(CXX) -dumpmachine))
 BUILDNO := $(shell git rev-list --count HEAD 2>&- || echo 0)
 
+VERSION_MAJOR := $(shell grep -Po '#define[[:space:]]+L5J_VERSION_MAJOR[[:space:]]+\K[[:digit:]]+' src/resource.h)
+VERSION_MINOR := $(shell grep -Po '#define[[:space:]]+L5J_VERSION_MINOR[[:space:]]+\K[[:digit:]]+' src/resource.h)
+VERSION_PATCH := $(shell grep -Po '#define[[:space:]]+L5J_VERSION_PATCH[[:space:]]+\K[[:digit:]]+' src/resource.h)
+
 ifeq ($(MACHINE),[i686])
   CPU_ARCH := x86
   MARCH ?= i586
 else ifeq ($(MACHINE),[x86_64])
-  CPU_ARCH := x64
+  CPU_ARCH := amd64
   MARCH ?= x86-64
 else
   $(error Unknown target machine "$(MACHINE)" encountered!)
@@ -52,9 +56,10 @@ init:
 
 .PHONY: resources
 resources: init
-	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/common.$(CPU_ARCH).o res/common.rc
-	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
-	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/registry.$(CPU_ARCH).o res/registry.rc
+	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest.xml > res/assets/manifest.$(CPU_ARCH).xml
+	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/common.$(CPU_ARCH).o res/common.rc
+	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
+	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/registry.$(CPU_ARCH).o res/registry.rc
 
 .PHONY: clean
 clean: init

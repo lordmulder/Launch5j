@@ -17,6 +17,10 @@
 
 #include "../src/resource.h"
 
+#ifndef L5J_CPU_ARCH
+#error  L5J_CPU_ARCH is not defined!
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
@@ -91,4 +95,8 @@ END
 // Manifest
 /////////////////////////////////////////////////////////////////////////////
 
-1 RT_MANIFEST "assets/manifest.xml"
+#define L5J_MANIFEST_GLUE1(X,Y,Z) #X #Y #Z
+#define L5J_MANIFEST_GLUE2(X,Y,Z) L5J_MANIFEST_GLUE1(X,Y,Z)
+#define L5J_MANIFEST_STR L5J_MANIFEST_GLUE2(assets/manifest.,L5J_CPU_ARCH,.xml)
+
+1 RT_MANIFEST L5J_MANIFEST_STR
