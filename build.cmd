@@ -83,7 +83,7 @@ echo Generate docs
 echo ========================================================================
 echo.
 echo "%~dp0.\README.md" --^> "%~dp0.\README.html"
-"%PANDOC_DIR%\pandoc.exe" --verbose -f markdown-implicit_figures -t html5 --standalone --ascii --toc --toc-depth=2 --css="etc/style/gh-pandoc.css" -o "%~dp0.\README.html" "%~dp0.\README.yaml" "%~dp0.\README.md"
+"%PANDOC_DIR%\pandoc.exe" --verbose -f markdown-implicit_figures -t html5 --standalone --ascii --toc --toc-depth=2 --css="etc/css/gh-pandoc.css" -o "%~dp0.\README.html" "%~dp0.\README.yaml" "%~dp0.\README.md"
 echo.
 
 echo.
