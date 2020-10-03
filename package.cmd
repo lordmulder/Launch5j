@@ -2,14 +2,6 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-set "PANDOC_DIR=C:\Program Files (x86)\Pandoc"
-
-if not exist "%PANDOC_DIR%\pandoc.exe" (
-	echo Pandoc not found. Please check PANDOC_DIR and try again^^!
-	pause
-	goto:eof
-)
-
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 REM Get current date
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,10 +33,11 @@ if exist "%OUTFILE%" (
 	goto:eof
 )
 
-rmdir /Q /S "%~dp0.\out\~package" 2> NUL
+set "PACK_PATH=%~dp0.\out\~package%RANDOM%"
+rmdir /Q /S "%PACK_PATH%" 2> NUL
 
-if exist "%~dp0.\out\~package" (
-	echo Failed to delete existing "%~dp0.\out\~package" directory!
+if exist "%PACK_PATH%" (
+	echo Failed to delete existing "%PACK_PATH%" directory!
 	pause
 	goto:eof
 )
@@ -66,34 +59,30 @@ REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 REM Copy binaries
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-mkdir "%~dp0.\out\~package"
-mkdir "%~dp0.\out\~package\x64"
+mkdir "%PACK_PATH%"
+mkdir "%PACK_PATH%\x64"
+mkdir "%PACK_PATH%\etc"
+mkdir "%PACK_PATH%\etc\img"
+mkdir "%PACK_PATH%\etc\style"
+mkdir "%PACK_PATH%\example"
 
-copy /Y "%~dp0.\*.txt"                 "%~dp0.\out\~package"
-copy /Y "%~dp0.\bin\launch5j_x86*.exe" "%~dp0.\out\~package"
-copy /Y "%~dp0.\bin\launch5j_x64*.exe" "%~dp0.\out\~package\x64"
+copy /Y "%~dp0.\*.txt"                 "%PACK_PATH%"
+copy /Y "%~dp0.\*.html"                "%PACK_PATH%"
+copy /Y "%~dp0.\bin\launch5j_x86*.exe" "%PACK_PATH%"
+copy /Y "%~dp0.\bin\launch5j_x64*.exe" "%PACK_PATH%\x64"
+copy /Y "%~dp0.\etc\img\*.png"         "%PACK_PATH%\etc\img"
+copy /Y "%~dp0.\etc\style\*.css"       "%PACK_PATH%\etc\style"
 
+copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\src\example\dist\example.jar" "%PACK_PATH%\example\example.exe"
+copy /Y "%~dp0.\src\example\src\com\muldersoft\l5j\example\Main.java" "%PACK_PATH%\example\example.java"
 
-mkdir "%~dp0.\out\~package\etc"
-mkdir "%~dp0.\out\~package\etc\img"
-mkdir "%~dp0.\out\~package\etc\style"
-mkdir "%~dp0.\out\~package\example"
-
-copy /Y "%~dp0.\etc\img\*.png"   "%~dp0.\out\~package\etc\img"
-copy /Y "%~dp0.\etc\style\*.css" "%~dp0.\out\~package\etc\style"
-
-copy /Y /B "%~dp0.\bin\launch5j_x86_wrapped_registry.exe" + "%~dp0.\src\example\dist\example.jar" "%~dp0.\out\~package\example\example.exe"
-copy /Y "%~dp0.\src\example\src\com\muldersoft\l5j\example\Main.java" "%~dp0.\out\~package\example\example.java"
-
-"%PANDOC_DIR%\pandoc.exe" -f markdown-implicit_figures -t html5 --standalone --ascii --toc --toc-depth=2 --css="etc/style/gh-pandoc.css" "%~dp0.\README.yaml" "%~dp0.\README.md" > "%~dp0.\out\~package\README.html"
-
-attrib +R "%~dp0.\out\~package\*.*" /S
+attrib +R "%PACK_PATH%\*.*" /S
 
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 REM Create ZIP package
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-pushd "%~dp0.\out\~package"
+pushd "%PACK_PATH%"
 
 if not "%ERRORLEVEL%"=="0" (
 	pause
@@ -113,8 +102,7 @@ if not "%ERRORLEVEL%"=="0" (
 
 popd
 
-rmdir /Q /S "%~dp0.\out\~package" 2> NUL
-
+rmdir /Q /S "%PACK_PATH%" 2> NUL
 attrib +R "%OUTFILE%"
 
 echo.

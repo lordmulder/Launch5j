@@ -11,6 +11,19 @@
 /* https://sourceforge.net/p/launch4j/                      */
 /************************************************************/
 
+#ifndef L5J_RESOURCE_H
+#define L5J_RESOURCE_H
+
+// BUILD NO
+#ifndef L5J_BUILDNO
+#error  L5J_BUILDNO is not defined!
+#endif
+
+// VERSION
+#define L5J_VERSION_MAJOR 0
+#define L5J_VERSION_MINOR 6
+#define L5J_VERSION_PATCH 1
+
 // ICON
 #define ID_ICON_MAIN 1
 
@@ -27,3 +40,5 @@
 #define ID_STR_JAVAMAX 7
 #define ID_STR_BITNESS 8
 #define ID_STR_JAVAURL 9
+
+#endif

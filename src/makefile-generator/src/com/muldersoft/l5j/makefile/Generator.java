@@ -19,6 +19,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -33,6 +36,7 @@ public class Generator {
 
     public static void main(String[] args) throws IOException {
         final List<String> targets = new ArrayList<String>();
+        final String salt = Instant.now().toString();
         final PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8.name());
 
         outputTemplate(out, "header");
@@ -42,7 +46,7 @@ public class Generator {
                 for (int stayAlive = 1; stayAlive > -1; --stayAlive) {
                     for (int enableSplash = 1; enableSplash > -1; --enableSplash) {
                         for (int encArgs = 1; encArgs > -1; --encArgs) {
-                            out.println(generateCommand(targets, wrapped, registry, stayAlive, enableSplash, encArgs));
+                            out.println(generateCommand(targets, salt, wrapped, registry, stayAlive, enableSplash, encArgs));
                         }
                     }
                 }
@@ -90,14 +94,15 @@ public class Generator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> targets, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
+    private static String generateCommand(final List<String> targets, final String salt, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
         final String nameSuffix = generateNameSuffix(wrapped, registry, stayAlive, enableSplash, encArgs);
-        final String targetName = "l5j" + nameSuffix;
+        final String targetName = "l5j_" + hash(nameSuffix, salt);
         targets.add(targetName);
         final StringBuilder cmdLine = new StringBuilder();
         cmdLine.append(String.format(".PHONY: %s\n", targetName));
         cmdLine.append(String.format("%s: resources\n", targetName));
         cmdLine.append(String.format("\t$(CC) $(CFLAGS) " +
+                        "-DL5J_BUILDNO=$(BUILDNO) " +
                         "-DL5J_JAR_FILE_WRAPPED=%d " +
                         "-DL5J_DETECT_REGISTRY=%d " +
                         "-DL5J_STAY_ALIVE=%d " +
@@ -151,4 +156,15 @@ public class Generator {
         builder.append(string);
     }
 
+    private static String hash(final String str, final String salt) {
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (final NoSuchAlgorithmException e) {
+            throw new Error(e);
+        }
+        digest.update(salt.getBytes(StandardCharsets.UTF_8));
+        final byte[] hash = digest.digest(str.getBytes(StandardCharsets.UTF_8));
+        return String.format("%02X%02X%02X%02X", hash[31], hash[30], hash[29], hash[28]);
+    }
 }

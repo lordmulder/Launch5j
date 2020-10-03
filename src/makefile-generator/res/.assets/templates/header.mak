@@ -12,6 +12,7 @@
 ############################################################
 
 MACHINE := $(patsubst %-w64-mingw32,[%],$(shell $(CXX) -dumpmachine))
+BUILDNO := $(shell git rev-list --count HEAD 2>&- || echo 0)
 
 ifeq ($(MACHINE),[i686])
   CPU_ARCH := x86
@@ -51,9 +52,9 @@ init:
 
 .PHONY: resources
 resources: init
-	windres -o obj/common.$(CPU_ARCH).o res/common.rc
-	windres -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
-	windres -o obj/registry.$(CPU_ARCH).o res/registry.rc
+	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/common.$(CPU_ARCH).o res/common.rc
+	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
+	windres -DL5J_BUILDNO=$(BUILDNO) -o obj/registry.$(CPU_ARCH).o res/registry.rc
 
 .PHONY: clean
 clean: init

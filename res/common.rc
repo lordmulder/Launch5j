@@ -48,9 +48,13 @@ END
 // Version
 /////////////////////////////////////////////////////////////////////////////
 
+#define L5J_VERSION_GLUE1(W,X,Y,Z) #W "." #X "." #Y "_r" #Z
+#define L5J_VERSION_GLUE2(W,X,Y,Z) L5J_VERSION_GLUE1(W,X,Y,Z)
+#define L5J_VERSION_STR L5J_VERSION_GLUE2(L5J_VERSION_MAJOR,L5J_VERSION_MINOR,L5J_VERSION_PATCH,L5J_BUILDNO)
+
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    0,6,0,0
- PRODUCTVERSION 0,6,0,0
+ FILEVERSION    L5J_VERSION_MAJOR,L5J_VERSION_MINOR,L5J_VERSION_PATCH,L5J_BUILDNO
+ PRODUCTVERSION L5J_VERSION_MAJOR,L5J_VERSION_MINOR,L5J_VERSION_PATCH,L5J_BUILDNO
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -67,8 +71,8 @@ BEGIN
         BEGIN
             VALUE "ProductName", "Launch5j"
             VALUE "FileDescription", "Launch5j"
-            VALUE "ProductVersion", "0.6.0"
-            VALUE "FileVersion", "0.6.0"
+            VALUE "ProductVersion", L5J_VERSION_STR
+            VALUE "FileVersion", L5J_VERSION_STR
             VALUE "InternalName", "Launch5j"
             VALUE "OriginalFilename", "launch5j.exe"
             VALUE "LegalCopyright", "Created by LoRd_MuldeR <MuldeR2@GMX.de>"

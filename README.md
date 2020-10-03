@@ -6,7 +6,6 @@
 
 **Launch5j** is a reimagination of “Launch4j”, *with full Unicode support*. This is a tool for wrapping Java applications distributed as JARs in lightweight Windows native executables. The executable can be configured to search for a certain JRE version or use a bundled one. The wrapper also provides better user experience through an application icon, a native pre-JRE splash screen, and a Java download page in case the appropriate JRE cannot be found.
 
-
 # Usage
 
 There currently are two different ways to use Launch5j with your application code:
@@ -37,7 +36,7 @@ There currently are two different ways to use Launch5j with your application cod
 
 # Variants
 
-Launch5j executables come in a number of variants, allowing you to pick the most suitable one for you project:
+Launch5j executables come in a number of variants, allowing you to pick the most suitable one for your project:
 
 * **`wrapped`**  
   Expects that the JAR file and the executable launcher have been combined to a *single* file; default variant expects that a separate JAR file is present in the same directory where the executable launcher resides.
@@ -50,6 +49,9 @@ Launch5j executables come in a number of variants, allowing you to pick the most
   - [AdoptOpenJDK](https://adoptopenjdk.net/)
   - [Liberica OpenJDK](https://bell-sw.com/)
 
+  Regarding the different available distributions of Java, please refer to this document:  
+  [*Java Is Still Free*](https://docs.google.com/document/d/1nFGazvrCvHMZJgFstlbzoHjpAVwv5DEdnaBr_5pKuHo/preview)
+
 * **`nowait`**  
   Does **not** keep the launcher executable alive while the application is running; default variant keeps the launcher executable alive until the application terminates and then forwards the application's exit code.
 
@@ -59,7 +61,7 @@ Launch5j executables come in a number of variants, allowing you to pick the most
 * **`noenc`**  
   Does **not** apply [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) to the given command-line arguments; default variant *does* apply URL encoding to all given command-line arguments in order to work around a long standing bug in Java.
 
-## Platforms
+## Supported platforms
 
 All of the above Launch5j variants are available as `x86` (32-Bit) and `x64` (64-Bit) executables. The `x86` (32-Bit) executables can run on *32-Bit* and *64-Bit* versions of Microsoft&reg; Windows&trade;, whereas the `x64` (64-Bit) executables require a *64-Bit* version of Microsoft&reg; Windows&trade;. Consequently, it is generally recommended to distribute the `x86` (32-Bit) launcher executable. Please note that this does **not** restrict the “bitness” of the JRE that can be used. Even the `x86` (32-Bit) launcher executable is perfectly able to detect and launch a *64-Bit* JRE &ndash; if it is available.
 
@@ -178,9 +180,19 @@ public class YourMainClass {
 
 ## JAR file name
 
-Be aware that the same problem of “mangled” Unicode characters applies when the path of the JAR file is passed to the Java executable. In other words, the Java runtime *fails* to execute any JAR files whose path &ndash; file name or directory name anywhere in the path &ndash; contains any Unicode characters that cannot be represented in the computer's *local* ANSI codepage! Unfortunately, we can **not** encode the path of the JAR file as we do with the other command-line arguments, because the Jave executable requires the path of the JAR file to be passed in a non-encoded form.
+Be aware that the same problem of “mangled” Unicode characters applies when the path of the JAR file is passed to the Java executable. In other words, the Java runtime *fails* to execute any JAR files whose path &ndash; file name or any directory name in the path &ndash; contains any Unicode characters that cannot be represented in the computer's *local* ANSI codepage! Unfortunately, we can **not** encode the path of the JAR file as we do with the other command-line arguments, because the Java executable requires the path of the JAR file to be passed in a non-encoded form.
 
 Therefore, it is recommended to ***only*** use ASCII characters in the name of your JAR file and in the “install” path !!!
+
+# Command-line options
+
+The launcher executable recognizes the following “special” command-line options:
+
+* **`--l5j-about`**:  
+  Display Launch5j about dialogue; includes version information and build configuration
+
+* **`--l5j-slunk`**:  
+  Enable experimental “slunk” mode; this is for experts only!
 
 
 # Source code
@@ -198,11 +210,11 @@ The source code of **Launch5j** is available from the official Git mirrors at:
 
 In order to build **Launch5j** from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
 
-Probably the most simple way to set up the required build environment is by installing the [**MSYS2**](https://www.msys2.org/) distribution, which includes *GCC* (Mingw-w64) as well as all the required build tools, such as *Bash* and *GNU make*.
+Probably the most simple way to set up the required build environment is by installing the [**MSYS2**](https://www.msys2.org/) distribution, which includes *GCC* (Mingw-w64) as well as all the required build tools, such as *Bash*, *GNU make* and *Git*.
 
 Please make sure that the essential development tools and the MinGW-w64 toolchains are installed:
 
-    $ pacman -S base-devel
+    $ pacman -S base-devel git
     $ pacman -S mingw-w64-i686-toolchain mingw-w64-x86_64-toolchain
 
 Once the build environment has been set up, just run the provided Makefile:

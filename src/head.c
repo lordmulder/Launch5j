@@ -11,6 +11,7 @@
 /* https://sourceforge.net/p/launch4j/                      */
 /************************************************************/
 
+#define UNICODE 1
 #define WIN32_LEAN_AND_MEAN 1
 
 // CRT
@@ -54,6 +55,11 @@ static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptopenjdk.n
 static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin\\javaw.exe";
 static const size_t MIN_MUTEXID_LENGTH = 5U;
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
+
+// Check platform
+#if !defined(_M_X64) && !defined(_M_IX86)
+#error Unknown target platform!
+#endif
 
 /* ======================================================================== */
 /* String routines                                                          */
@@ -124,6 +130,30 @@ static wchar_t *wcsndup (const wchar_t *const str, const size_t n)
     wcsncpy(result, str, str_len);
     result[str_len] = '\0';
     return result;
+}
+
+static const wchar_t *skip_leading_spaces(const wchar_t *const str)
+{
+    if (NOT_EMPTY(str))
+    {
+        const wchar_t *result;
+        for (result = str; (*result) && iswspace(*result); ++result);
+        return result;
+    }
+    return str;
+}
+
+static BOOL starts_with(const wchar_t *const str, const wchar_t *const prefix)
+{
+    const size_t prefix_len = wcslen(prefix);
+    if (wcsnicmp(skip_leading_spaces(str), prefix, prefix_len) == 0)
+    {
+        if ((!str[prefix_len]) || iswspace(str[prefix_len]))
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static wchar_t *wcstrim(wchar_t *const str)
@@ -249,19 +279,6 @@ static const wchar_t *url_encode_str(const CHAR *const input)
 
     buffer[j] = '\0';
     return buffer;
-}
-
-static const wchar_t *url_encode_wcs(const wchar_t *const input, const UINT code_page)
-{
-    const CHAR *byte_string = utf16_to_bytes(input, code_page);
-    if (!byte_string)
-    {
-        return NULL;
-    }
-
-    const wchar_t *encoded = url_encode_str(byte_string);
-    free((void*)byte_string);
-    return encoded;
 }
 
 /* ======================================================================== */
@@ -1066,44 +1083,60 @@ static DWORD load_java_bitness(const HINSTANCE hinstance, const UINT id)
 
 static wchar_t *encode_commandline_args(const int argc, const LPWSTR *const argv)
 {
-    wchar_t *result_buffer = NULL;
-    if (argv && (argc > 0))
+    if (!(argv && (argc > 0)))
     {
-        const wchar_t **encoded_argv = (const wchar_t**) malloc(sizeof(wchar_t*) * argc);
-        if (encoded_argv)
+        return NULL;
+    }
+
+    const CHAR **argv_utf8 = (const CHAR**) malloc(sizeof(CHAR*) * argc);
+    if(!argv_utf8)
+    {
+        return NULL;
+    }
+
+    size_t total_len = 0U;
+    for (int i = 0; i < argc; ++i)
+    {
+        argv_utf8[i] = utf16_to_bytes(argv[i], CP_UTF8);
+        if (argv_utf8[i])
         {
-            size_t total_len = 0U;
-            for (int i = 0; i < argc; ++i)
-            {
-                if (NOT_EMPTY(encoded_argv[i] = url_encode_wcs(argv[i], CP_UTF8)))
-                {
-                    total_len += (wcslen(encoded_argv[i]) + 1U);
-                }
-            }
-            if (total_len > 0U)
-            {
-                if ((result_buffer = (wchar_t*) calloc( total_len, sizeof(wchar_t))))
-                {
-                    for(int i = 0; i < argc; ++i)
-                    {
-                        if (NOT_EMPTY(encoded_argv[i]))
-                        {
-                            if(result_buffer[0U])
-                            {
-                                wcscat(result_buffer, L" ");
-                            }
-                            wcscat(result_buffer, encoded_argv[i]);
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < argc; ++i)
-            {
-                free((void*)encoded_argv[i]);
-            }
-            free(encoded_argv);
+            total_len += argv_utf8[i][0U] ? url_encoded_length(argv_utf8[i]) : 3U;
         }
     }
+
+    wchar_t *result_buffer = NULL;
+    if (total_len > 0U)
+    {
+        if ((result_buffer = (wchar_t*) calloc(total_len, sizeof(wchar_t))))
+        {
+            for (int i = 0; i < argc; ++i)
+            {
+                if (argv_utf8[i])
+                {
+                    if (result_buffer[0U])
+                    {
+                        wcscat(result_buffer, L" ");
+                    }
+                    if (argv_utf8[i][0U])
+                    {
+                        const wchar_t *const arg_encoded = url_encode_str(argv_utf8[i]);
+                        if (arg_encoded)
+                        {
+                            wcscat(result_buffer, arg_encoded);
+                            free((void*)arg_encoded);
+                        }
+                    }
+                    else
+                    {
+                        wcscat(result_buffer, L"\"\"");
+                    }
+                    free((void*)argv_utf8[i]);
+                }
+            }
+        }
+    }
+
+    free(argv_utf8);
     return result_buffer;
 }
 
@@ -1317,6 +1350,45 @@ static void show_jre_download_notice(const HINSTANCE hinstance, const HWND hwnd,
     free(jre_download_link);
 }
 
+static void show_about_dialogue(const HWND hwnd)
+{
+#ifdef _M_X64
+    const wchar_t *const CPU_ARCH = L"x64";
+#else
+    const wchar_t *const CPU_ARCH = L"x86";
+#endif
+    show_message_format(hwnd, MB_ICONINFORMATION, L"About Launch5j",
+        L"Launch5j (%s), by LoRd_MuldeR <MuldeR2@GMX.de>\n"
+            L"v%u.%u.%u, build %u, created %s %s\n\n"
+            L"This work has been released under the MIT license.\n"
+            L"For details, please see:\n"
+            L"https://opensource.org/licenses/MIT\n\n"
+            L"Check the project website for news and updates:\n"
+            L"https://github.com/lordmulder/\n\n"
+            L"Build options:\n"
+            L"JAR_FILE_WRAPPED=%d, DETECT_REGISTRY=%d, ENABLE_SPLASH=%d, STAY_ALIVE=%d, ENCODE_ARGS=%d, WAIT_FOR_WINDOW=%d",
+        CPU_ARCH, L5J_VERSION_MAJOR, L5J_VERSION_MINOR, L5J_VERSION_PATCH, L5J_BUILDNO, TEXT(__DATE__), TEXT(__TIME__),
+        L5J_JAR_FILE_WRAPPED, L5J_DETECT_REGISTRY, L5J_ENABLE_SPLASH, L5J_STAY_ALIVE, L5J_ENCODE_ARGS, L5J_WAIT_FOR_WINDOW);
+}
+
+static void enable_slunk_mode(const HWND hwnd)
+{
+    const WORD DATA[45U] =
+    {
+        0x1924, 0x82AB, 0x5252, 0xC021, 0xE1A3, 0x3969, 0xFEE5, 0x4A4A, 0x93E3, 0x3470, 0xDED9, 0x3A97, 0x12E1, 0xC694, 0xF5A7,
+        0x8539, 0x82A9, 0x864D, 0x8853, 0x5E0F, 0x4803, 0x45CC, 0x19B7, 0x391A, 0x0753, 0x1936, 0x6ECA, 0xCAEA, 0xA340, 0x5574,
+        0x8A94, 0x0620, 0x405A, 0x8D0B, 0xB221, 0x1FC5, 0x42A4, 0x95BB, 0x689A, 0x8C61, 0x4EEC, 0x82CA, 0x728B, 0xFE59, 0x47B8
+    };
+    UINT32 mask = 0xB499E87D;
+    wchar_t slunk[45U];
+    for(size_t i = 0; i < 45U; ++i)
+    {
+        mask = mask * 214013U + 2531011U;
+        slunk[i] = (wchar_t) ((DATA[i] ^ mask) & 0xFFFF);
+    }
+    ShellExecute(hwnd, NULL, slunk, NULL, NULL, SW_SHOW);
+}
+
 /* ======================================================================== */
 /* Single instance                                                          */
 /* ======================================================================== */
@@ -1424,6 +1496,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 
     // Create the window
     HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+
+    // Show about screen?
+    if (starts_with(pCmdLine, L"--l5j-about"))
+    {
+        show_about_dialogue(hwnd);
+        return 0;
+    }
+    if (starts_with(pCmdLine, L"--l5j-slunk"))
+    {
+        enable_slunk_mode(hwnd);
+        return 0;
+    }
 
     // Single instance
 #if L5J_STAY_ALIVE
