@@ -6,7 +6,7 @@ REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 REM Get current date
 REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-set "ISO_DATE="
+set ISO_DATE=
 
 for /F "usebackq tokens=1" %%a in (`start /WAIT /B "" "%~dp0.\etc\utils\core-utils\date.exe" +"%%Y-%%m-%%d"`) do (
 	set "ISO_DATE=%%a"

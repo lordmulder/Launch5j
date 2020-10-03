@@ -48,7 +48,7 @@ END
 // Version
 /////////////////////////////////////////////////////////////////////////////
 
-#define L5J_VERSION_GLUE1(W,X,Y,Z) #W "." #X "." #Y "_r" #Z
+#define L5J_VERSION_GLUE1(W,X,Y,Z) #W "." #X "." #Y " [build " #Z "]"
 #define L5J_VERSION_GLUE2(W,X,Y,Z) L5J_VERSION_GLUE1(W,X,Y,Z)
 #define L5J_VERSION_STR L5J_VERSION_GLUE2(L5J_VERSION_MAJOR,L5J_VERSION_MINOR,L5J_VERSION_PATCH,L5J_BUILDNO)
 

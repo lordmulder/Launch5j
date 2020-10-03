@@ -48,6 +48,7 @@ Launch5j executables come in a number of variants, allowing you to pick the most
   - [Oracle JDK (JavaSoft)](https://www.oracle.com/java/technologies/javase-downloads.html)
   - [AdoptOpenJDK](https://adoptopenjdk.net/)
   - [Liberica OpenJDK](https://bell-sw.com/)
+  - [Zulu OpenJDK](https://www.azul.com/downloads/zulu-community/)
 
   Regarding the different available distributions of Java, please refer to this document:  
   [*Java Is Still Free*](https://docs.google.com/document/d/1nFGazvrCvHMZJgFstlbzoHjpAVwv5DEdnaBr_5pKuHo/preview)

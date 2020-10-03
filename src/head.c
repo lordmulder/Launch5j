@@ -285,21 +285,25 @@ static const wchar_t *url_encode_str(const CHAR *const input)
 /* System information                                                       */
 /* ======================================================================== */
 
-typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE hProcess, PBOOL wow64Process);
 
 static BOOL running_on_64bit(void)
 {
 #ifndef _M_X64
-    BOOL is_wow64_flag = FALSE;
-    const LPFN_ISWOW64PROCESS is_wow64_process = (LPFN_ISWOW64PROCESS) GetProcAddress(GetModuleHandleW(L"kernel32"),"IsWow64Process");
-    if (is_wow64_process)
+    const HMODULE kernel32 = GetModuleHandleW(L"kernel32");
+    if (kernel32)
     {
-        if (!is_wow64_process(GetCurrentProcess(), &is_wow64_flag))
+        const LPFN_ISWOW64PROCESS ptr_is_wow64_process = (LPFN_ISWOW64PROCESS) GetProcAddress(kernel32,"IsWow64Process");
+        if (ptr_is_wow64_process)
         {
-            is_wow64_flag = FALSE;
+            BOOL is_wow64_flag = FALSE;
+            if (ptr_is_wow64_process(GetCurrentProcess(), &is_wow64_flag))
+            {
+                return is_wow64_flag;
+            }
         }
     }
-    return is_wow64_flag;
+    return FALSE;
 #else
     return TRUE;
 #endif
@@ -1006,8 +1010,8 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
     {
         { 1U, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 1U, L"SOFTWARE\\JavaSoft\\JRE" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
         { 1U, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 1U, L"SOFTWARE\\JavaSoft\\JDK" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
-        { 3U, L"SOFTWARE\\BellSoft\\Liberica"},
-        { 0U, NULL }
+        { 3U, L"SOFTWARE\\BellSoft\\Liberica" },
+        { 3U, L"SOFTWARE\\Azul Systems\\Zulu" }, { 0U, NULL }
     };
 
     const wchar_t *runtime_path = NULL;

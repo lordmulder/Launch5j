@@ -2,10 +2,28 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-set "MSYS2_DIR=C:\msys64"
-set "JAVA_HOME=C:\Java\jdk-8.0.265.01-hotspot"
-set "ANT_HOME=C:\Program Files (x86)\Ant"
-set "PANDOC_DIR=C:\Program Files (x86)\Pandoc"
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+REM Read configuration
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+set MSYS2_DIR=
+set JAVA_HOME=
+set ANT_HOME=
+set PANDOC_DIR=
+
+if not exist "%~dp0.\build.cfg" (
+	echo Configuration file "build.cfg" not found. Please create^^!
+	pause
+	goto:eof
+)
+
+for /F "usebackq tokens=1,* delims==" %%a in ("%~dp0.\build.cfg") do (
+	set "%%~a=%%~b"
+)
+
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+REM Verify paths
+REM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 if not exist "%MSYS2_DIR%\msys2_shell.cmd" (
 	echo MSYS2 SHELL not found. Please check MSYS2_DIR and try again^^!
