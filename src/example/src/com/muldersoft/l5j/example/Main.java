@@ -27,15 +27,27 @@ public class Main {
     }
 
     private static void initCommandlineArgs(final String[] argv) {
-        if (System.getProperty("l5j.pid") == null) {
-            return; /*nothing to do*/
+        if (boolify(System.getProperty("l5j.encargs"))) {
+            final String enc = StandardCharsets.UTF_8.name();
+            for (int i = 0; i < argv.length; ++i) {
+                try {
+                    argv[i] = URLDecoder.decode(argv[i], enc);
+                } catch (Exception e) { }
+            }
         }
-        final String enc = StandardCharsets.UTF_8.name();
-        for (int i = 0; i < argv.length; ++i) {
+    }
+    
+    private static boolean boolify(final String string) {
+        if(string != null) {
+            final String value = string.trim();
+            if(value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes")) {
+                return true;
+            }
             try {
-                argv[i] = URLDecoder.decode(argv[i], enc);
-            } catch (Exception e) { }
+                return (Integer.parseInt(value) > 0);
+            } catch(Exception e) { }
         }
+        return false;
     }
 
     private static String dumpCommandLine(final String[] argv) {

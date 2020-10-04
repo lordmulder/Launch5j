@@ -153,31 +153,32 @@ As a workaround for the current situation in Java, Launch5j will (by default) co
 The only downside is that additional processing is required in the application code:
 
 ```java
-public class YourMainClass {
-  public static void main(final String[] args) {
-    initCommandlineArgs(args);
-    /* your application code goes here! */
-  }
-
-  private static void initCommandlineArgs(final String[] argv) {
-    if (System.getProperty("l5j.pid") == null) {
-      return; /*nothing to do*/
+public class MainClass {
+    public static void main(final String[] args) {
+        initCommandlineArgs(args);
+        /* Your application code goes here! */
     }
-    final String utf8enc = StandardCharsets.UTF_8.name();
-    for (int i = 0; i < argv.length; ++i) {
-      try {
-        argv[i] = URLDecoder.decode(argv[i], utf8enc);
-      } catch (Exception e) { }
-    }
-  }
 
-  /* ... */
+    private static void initCommandlineArgs(final String[] argv) {
+        if (boolify(System.getProperty("l5j.encargs"))) {
+            final String enc = StandardCharsets.UTF_8.name();
+            for (int i = 0; i < argv.length; ++i) {
+                try {
+                    argv[i] = URLDecoder.decode(argv[i], enc);
+                } catch (Exception e) { }
+            }
+        }
+    }
+
+    /* ... */
 }
 ```
 
 ***Example:***
 
 ![Unicode command-line arguments](etc/img/unicode-args.png)
+
+Please refer to the file **`example/example.java`** for the *complete* example code!
 
 ## JAR file name
 
