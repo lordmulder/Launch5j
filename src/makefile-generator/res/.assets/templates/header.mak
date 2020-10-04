@@ -39,8 +39,8 @@ else
   SUFFIX = g.exe
 endif
 
-CFLAGS += -municode -mwindows -march=$(MARCH) -mtune=$(MTUNE)
-LDFLAGS = -lcomctl32
+CFLAGS += -municode -march=$(MARCH) -mtune=$(MTUNE)
+LDFLAGS = -lcomctl32 -lgdi32
 
 MANIFEST := tmp/assets/manifest.$(CPU_ARCH).xml
 
@@ -68,7 +68,7 @@ $(MANIFEST):
 	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest.xml > $@
 
 .PHONY: clean
-clean: init
+clean: initialize
 	$(RM) bin/*.$(SUFFIX)
 	$(RM) obj/*.o
 

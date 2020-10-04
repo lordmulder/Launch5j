@@ -41,12 +41,14 @@ public class Generator {
 
         outputTemplate(out, "header");
 
-        for (int wrapped = 0; wrapped < 2; ++wrapped) {
-            for (int registry = 0; registry < 2; ++registry) {
-                for (int stayAlive = 1; stayAlive > -1; --stayAlive) {
-                    for (int enableSplash = 1; enableSplash > -1; --enableSplash) {
-                        for (int encArgs = 1; encArgs > -1; --encArgs) {
-                            out.println(generateCommand(targets, salt, wrapped, registry, stayAlive, enableSplash, encArgs));
+        for (int enableGui = 1; enableGui > -1; --enableGui) {
+            for (int wrapped = 0; wrapped < 2; ++wrapped) {
+                for (int registry = 0; registry < 2; ++registry) {
+                    for (int stayAlive = 1; stayAlive > -1; --stayAlive) {
+                        for (int enableSplash = 1; enableSplash > -1; --enableSplash) {
+                            for (int encArgs = 1; encArgs > -1; --encArgs) {
+                                out.println(generateCommand(targets, salt, enableGui, wrapped, registry, stayAlive, enableSplash, encArgs));
+                            }
                         }
                     }
                 }
@@ -94,15 +96,18 @@ public class Generator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> targets, final String salt, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
-        final String nameSuffix = generateNameSuffix(wrapped, registry, stayAlive, enableSplash, encArgs);
+    private static String generateCommand(final List<String> targets, final String salt, final int enableGui, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
+        final String nameSuffix = generateNameSuffix(enableGui, wrapped, registry, stayAlive, enableSplash, encArgs);
         final String targetName = "l5j_" + hash(nameSuffix, salt);
         targets.add(targetName);
+        final String exeType = (enableGui > 0) ? "windows" : "console";
         final StringBuilder cmdLine = new StringBuilder();
         cmdLine.append(String.format(".PHONY: %s\n", targetName));
         cmdLine.append(String.format("%s: resources\n", targetName));
         cmdLine.append(String.format("\t$(CC) $(CFLAGS) " +
+                        "-m%s " +
                         "-DL5J_BUILDNO=$(BUILDNO) " +
+                        "-DL5J_ENABLE_GUI=%d " +
                         "-DL5J_JAR_FILE_WRAPPED=%d " +
                         "-DL5J_DETECT_REGISTRY=%d " +
                         "-DL5J_STAY_ALIVE=%d " +
@@ -110,6 +115,8 @@ public class Generator {
                         "-DL5J_ENCODE_ARGS=%d " +
                         "-o bin/launch5j_$(CPU_ARCH)%s.exe " +
                         "src/head.c obj/common.$(CPU_ARCH).o",
+                        exeType,
+                        enableGui,
                         wrapped,
                         registry,
                         stayAlive,
@@ -129,8 +136,11 @@ public class Generator {
         return cmdLine.toString();
     }
 
-    private static String generateNameSuffix(final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
+    private static String generateNameSuffix(final int enableGui, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
         final StringBuilder builder = new StringBuilder();
+        if (enableGui == 0) {
+            append(builder, '_', "cli");
+        }
         if (wrapped > 0) {
             append(builder, '_', "wrapped");
         }

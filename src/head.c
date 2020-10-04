@@ -31,6 +31,9 @@
 #include "resource.h"
 
 // Options
+#ifndef L5J_ENABLE_GUI
+#error  L5J_ENABLE_GUI flag is *not* defined!
+#endif
 #ifndef L5J_JAR_FILE_WRAPPED
 #error  L5J_JAR_FILE_WRAPPED flag is *not* defined!
 #endif
@@ -1514,7 +1517,7 @@ static void destroy_window(HWND *const hwnd)
 static wchar_t *const DEFAULT_HEADING = L"Launch5j";
 #define APP_HEADING (AVAILABLE(app_heading) ? app_heading : DEFAULT_HEADING)
 
-int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLine, int _nCmdShow)
+static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_line_args)
 {
     int result = -1;
     const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL,
@@ -1538,18 +1541,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
     const DWORD pid = GetCurrentProcessId();
 
     // Load title
-    app_heading = load_string(hInstance, ID_STR_HEADING);
+    app_heading = load_string(hinstance, ID_STR_HEADING);
 
     // Create the window
-    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hinstance, NULL);
 
     // Show about screen?
-    if (starts_with(pCmdLine, L"--l5j-about"))
+    if (starts_with(cmd_line_args, L"--l5j-about"))
     {
         show_about_dialogue(hwnd);
         return 0;
     }
-    if (starts_with(pCmdLine, L"--l5j-slunk"))
+    if (starts_with(cmd_line_args, L"--l5j-slunk"))
     {
         enable_slunk_mode(hwnd);
         return 0;
@@ -1557,7 +1560,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 
     // Single instance
 #if L5J_STAY_ALIVE
-    mutex_name = load_string(hInstance, ID_STR_MUTEXID);
+    mutex_name = load_string(hinstance, ID_STR_MUTEXID);
     if (AVAILABLE(mutex_name) && (wcslen(mutex_name) >= MIN_MUTEXID_LENGTH + ((mutex_name[0U] == L'@') ? 0U : 1U)))
     {
         if(!initialize_mutex(&mutex_handle, (mutex_name[0U] == L'@') ? mutex_name + 1U : mutex_name))
@@ -1574,7 +1577,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 
     // Show the splash screen
 #if L5J_ENABLE_SPLASH
-    if ((splash_image = LoadImage(hInstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE)))
+    if ((splash_image = LoadImage(hinstance, MAKEINTRESOURCE(ID_BITMAP_SPLASH), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE)))
     {
         if (create_splash_screen(hwnd, splash_image))
         {
@@ -1622,17 +1625,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 
     // Find the Java runtime executable path (possibly from the registry)
 #if L5J_DETECT_REGISTRY
-    java_required_ver_min = load_java_version(hInstance, ID_STR_JAVAMIN, (8ull << 48));
-    java_required_ver_max = load_java_version(hInstance, ID_STR_JAVAMAX, MAXULONGLONG);
-    java_required_bitness = load_java_bitness(hInstance, ID_STR_BITNESS);
+    java_required_ver_min = load_java_version(hinstance, ID_STR_JAVAMIN, (8ull << 48));
+    java_required_ver_max = load_java_version(hinstance, ID_STR_JAVAMAX, MAXULONGLONG);
+    java_required_bitness = load_java_bitness(hinstance, ID_STR_BITNESS);
     if (!(java_runtime_path = detect_java_runtime(java_required_bitness, java_required_ver_min, java_required_ver_max)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Java Runtime Environment (JRE) could not be found!");
-        show_jre_download_notice(hInstance, hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
+        show_jre_download_notice(hinstance, hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
         goto cleanup;
     }
 #else
-    jre_relative_path = load_string(hInstance, ID_STR_JREPATH);
+    jre_relative_path = load_string(hinstance, ID_STR_JREPATH);
     if (!(java_runtime_path = get_java_full_path(executable_path, jre_relative_path)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
@@ -1646,11 +1649,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE _hPrevInstance, PWSTR pCmdLin
 #endif
 
     // Load additional options
-    jvm_extra_args = load_string(hInstance, ID_STR_JVMARGS);
-    cmd_extra_args = load_string(hInstance, ID_STR_CMDARGS);
+    jvm_extra_args = load_string(hinstance, ID_STR_JVMARGS);
+    cmd_extra_args = load_string(hinstance, ID_STR_CMDARGS);
 
     // Make sure command-line was created
-    command_line = build_commandline(pid, java_runtime_path, jarfile_path, jvm_extra_args, cmd_extra_args, pCmdLine);
+    command_line = build_commandline(pid, java_runtime_path, jarfile_path, jvm_extra_args, cmd_extra_args, cmd_line_args);
     if (!command_line)
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java command-line could not be generated!");
@@ -1730,3 +1733,21 @@ cleanup:
 
     return result;
 }
+
+/* ======================================================================== */
+/* Entry points                                                             */
+/* ======================================================================== */
+
+#if L5J_ENABLE_GUI
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
+{
+    return launch5j_main(hInstance, pCmdLine);
+}
+#else
+extern HINSTANCE __mingw_winmain_hInstance;
+extern LPWSTR __mingw_winmain_lpCmdLine;
+int wmain(int argc, wchar_t **argv, wchar_t **envp)
+{
+    return launch5j_main(__mingw_winmain_hInstance, __mingw_winmain_lpCmdLine);
+}
+#endif
