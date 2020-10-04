@@ -55,7 +55,8 @@
 
 // Const
 static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptopenjdk.net/";
-static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin\\javaw.exe";
+static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin";
+static const wchar_t *const JRE_EXECUTABLE_NAME = L5J_ENABLE_GUI ? L"javaw.exe" : L"java.exe";
 static const size_t MIN_MUTEXID_LENGTH = 5U;
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 
@@ -859,7 +860,7 @@ static ULONGLONG parse_java_version(const wchar_t *const version_str)
 static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_out, const HKEY root_key, const wchar_t *const full_reg_path, const BOOL reg_view_64bit)
 {
     static const wchar_t *const JAVA_REG_NAMES[] = { L"JavaHome", L"Path", L"InstallationPath", NULL };
-    static const wchar_t *const JAVA_EXE_PATHS[] = { L"%s\\jre\\bin\\javaw.exe", L"%s\\bin\\javaw.exe", NULL };
+    static const wchar_t *const JAVA_EXE_PATHS[] = { L"%s\\jre\\bin\\%s", L"%s\\bin\\%s", NULL };
 
     *executable_path_out = NULL;
     DWORD result = 0U;
@@ -874,10 +875,10 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
             {
                 for (size_t j = 0U; JAVA_EXE_PATHS[j] && (!result); ++j)
                 {
-                    const wchar_t *const javaw_executable_path = aswprintf(JAVA_EXE_PATHS[j], java_home_path);
-                    if (javaw_executable_path)
+                    const wchar_t *const java_executable_path = aswprintf(JAVA_EXE_PATHS[j], java_home_path, JRE_EXECUTABLE_NAME);
+                    if (java_executable_path)
                     {
-                        const wchar_t *const absolute_executable_path = get_absolute_path(javaw_executable_path);
+                        const wchar_t *const absolute_executable_path = get_absolute_path(java_executable_path);
                         if (absolute_executable_path)
                         {
                             const DWORD bitness = file_is_executable(absolute_executable_path);
@@ -891,7 +892,7 @@ static DWORD detect_java_runtime_verify(const wchar_t **const executable_path_ou
                                 free((void*)absolute_executable_path);
                             }
                         }
-                        free((void*)javaw_executable_path);
+                        free((void*)java_executable_path);
                     }
                 }
             }
@@ -1090,7 +1091,7 @@ static DWORD load_java_bitness(const HINSTANCE hinstance, const UINT id)
 static const wchar_t *get_java_full_path(const wchar_t *const jre_base_path, const wchar_t *const jre_relative_path)
 {
     const wchar_t *const relative_path_ptr = AVAILABLE(jre_relative_path) ? skip_leading_separator(jre_relative_path) : NULL;
-    return aswprintf(L"%s\\%s", jre_base_path, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT);
+    return aswprintf(L"%s\\%s\\%s", jre_base_path, NOT_EMPTY(relative_path_ptr) ? relative_path_ptr: JRE_RELATIVE_PATH_DEFAULT, JRE_EXECUTABLE_NAME);
 }
 
 /* ======================================================================== */
@@ -1347,7 +1348,11 @@ static const wchar_t *describe_system_error(const DWORD error_code)
     return error_test;
 }
 
+#if L5J_ENABLE_GUI
 #define show_message(HWND, FLAGS, TITLE, TEXT) MessageBoxW((HWND), (TEXT), (TITLE), (FLAGS))
+#else
+#define show_message(HWND, FLAGS, TITLE, TEXT) ({ const int _retval = __ms_fwprintf(stderr, L"%s\n", (TEXT)); fflush(stderr); _retval; })
+#endif
 
 static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *const title, const wchar_t *const format, ...)
 {
@@ -1358,7 +1363,7 @@ static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *cons
     const wchar_t *const text = vaswprintf(format, ap );
     if(NOT_EMPTY(text))
     {
-        result = MessageBoxW(hwnd, text, title, flags);
+        result = show_message(hwnd, flags, title, text);
     }
 
     free((void*)text);
@@ -1525,13 +1530,16 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
+    HWND hwnd = NULL;
     HGDIOBJ splash_image = NULL;
     BOOL have_screen_created = FALSE;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
 
     // Ensure that the ComCtl32 DLL is loaded
+#if L5J_ENABLE_GUI
     InitCommonControls(); 
+#endif
 
     // Initialize
     SecureZeroMemory(&startup_info, sizeof(STARTUPINFOW));
@@ -1544,7 +1552,9 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     app_heading = load_string(hinstance, ID_STR_HEADING);
 
     // Create the window
-    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hinstance, NULL);
+#if L5J_ENABLE_GUI
+    hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hinstance, NULL);
+#endif
 
     // Show about screen?
     if (starts_with(cmd_line_args, L"--l5j-about"))
@@ -1717,8 +1727,10 @@ cleanup:
     close_handle(&process_info.hProcess);
     close_handle(&mutex_handle);
 
+#if L5J_ENABLE_GUI
     destroy_window(&hwnd);
     delete_object(&splash_image);
+#endif
 
     free((void*)jvm_extra_args);
     free((void*)cmd_extra_args);

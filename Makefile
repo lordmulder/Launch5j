@@ -40,7 +40,7 @@ else
 endif
 
 CFLAGS += -municode -march=$(MARCH) -mtune=$(MTUNE)
-LDFLAGS = -lcomctl32 -lgdi32
+LDFLAGS = -lcomctl32
 
 MANIFEST := tmp/assets/manifest.$(CPU_ARCH).xml
 
