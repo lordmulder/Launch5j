@@ -150,7 +150,7 @@ More specifically, Java replaces any characters in the given command-line argume
 
 As a workaround for the current situation in Java, Launch5j will (by default) convert the given Unicode command-line arguments to the [UTF-8](https://en.wikipedia.org/wiki/UTF-8) format and then apply the [URL encoding](https://en.wikipedia.org/wiki/Percent-encoding) scheme. This ensures that *only* pure ASCII characters need to be passed to the Java executable, thus preventing the command-line arguments from being “mangled”. Still the original Unicode command-line arguments are preserved and *can* be reconstructed in the Java code.
 
-The only downside is that additional processing is required in the application code:
+The only downside is that a bit of additional processing is required in the application code. The command-line arguments can be decoded by using the `URLDecoder.decode()` method with the **UTF-8** charset. Also, applications should check the `l5j.encargs` system property before decoding the command-line arguments:
 
 ```java
 public class MainClass {

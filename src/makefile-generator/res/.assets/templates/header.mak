@@ -42,6 +42,8 @@ endif
 CFLAGS += -municode -mwindows -march=$(MARCH) -mtune=$(MTUNE)
 LDFLAGS = -lcomctl32
 
+MANIFEST := tmp/assets/manifest.$(CPU_ARCH).xml
+
 # ==========================================================
 # Targets
 # ==========================================================
@@ -49,17 +51,21 @@ LDFLAGS = -lcomctl32
 .PHONY: default
 default: all
 
-.PHONY: init
-init:
+.PHONY: initialize
+initialize:
 	mkdir -p bin
 	mkdir -p obj
+	mkdir -p tmp
 
 .PHONY: resources
-resources: init
-	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest.xml > res/assets/manifest.$(CPU_ARCH).xml
+resources: initialize $(MANIFEST)
 	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/common.$(CPU_ARCH).o res/common.rc
 	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
 	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/registry.$(CPU_ARCH).o res/registry.rc
+
+$(MANIFEST):
+	mkdir -p $(@D)
+	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest.xml > $@
 
 .PHONY: clean
 clean: init
