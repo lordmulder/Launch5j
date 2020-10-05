@@ -1,10 +1,10 @@
 ![Launch5j](etc/img/logo.png)
 
-**Java JAR file wrapper for creating Windows native executables**
+**Java JAR file wrapper for creating Windows&trade; native executables**
 
 # Introduction
 
-**Launch5j** is a reimagination of “Launch4j”, *with full Unicode support*. This is a tool for wrapping Java applications distributed as JARs in lightweight Windows native executables. The executable can be configured to search for a certain JRE version or use a bundled one. The wrapper also provides better user experience through an application icon, a native pre-JRE splash screen, and a Java download page in case the appropriate JRE cannot be found.
+**Launch5j** is a reimagination of “Launch4j”, *with full Unicode support*. This is a tool for wrapping Java applications distributed as JARs in lightweight Windows&trade; native executables. The executable can be configured to search for a certain JRE version or use a bundled one. The wrapper also provides better user experience through an application icon, a native pre-JRE splash screen, and a Java download page in case the appropriate JRE cannot be found.
 
 # Usage
 
@@ -70,7 +70,7 @@ Launch5j executables come in a number of variants, allowing you to pick the most
   Expects that the JAR file and the executable launcher have been combined to a *single* file; default variant expects that a separate JAR file is present in the same directory where the executable launcher resides.
 
 * **`registry`**  
-  Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `runtime` path relative to the location of the executable launcher.
+  Tries to automatically detect the install path of the JRE from the Windows&trade; registry; default variant expects the JRE to be located in the `runtime` path relative to the location of the executable launcher.
   
   At this time, the following Java distributions can be detected from the registry:
   - [Oracle JDK (JavaSoft)](https://www.oracle.com/java/technologies/javase-downloads.html)
@@ -225,9 +225,21 @@ The launcher executable recognizes the following “special” command-line opti
   Enable experimental “slunk” mode; this is for experts only!
 
 
-# Source code
+# Downloads
 
-The source code of **Launch5j** is available from the official Git mirrors at:
+Official **Launch5j** download mirrors:
+
+* <https://github.com/lordmulder/Launch5j/releases>
+
+* <https://sourceforge.net/projects/muldersoft/files/Launch5j/>
+
+* <https://bitbucket.org/muldersoft/launch5j/downloads/>
+
+It is *highly recommended* to download Launch5j only from one of the mirrors listed above. We are **not** responsible for the integrity and trustworthiness of Launch5j downloads you may have received from other locations!
+
+## Source code
+
+**Launch5j** source code is available via [Git](https://git-scm.com/):
 
 * `git clone https://github.com/lordmulder/Launch5j.git`
 
@@ -238,7 +250,7 @@ The source code of **Launch5j** is available from the official Git mirrors at:
 
 # Build instructions
 
-In order to build **Launch5j** from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
+In order to build **Launch5j** from the sources, it is recommended to use the [*GNU C Compiler* (GCC)](https://gcc.gnu.org/) for Windows&trade;, as provided by the [*Mingw-w64*](http://mingw-w64.org/) project. Other C compilers may work, but are **not** officially supported.
 
 Probably the most simple way to set up the required build environment is by installing the [**MSYS2**](https://www.msys2.org/) distribution, which includes *GCC* (Mingw-w64) as well as all the required build tools, such as *Bash*, *GNU make* and *Git*.
 
