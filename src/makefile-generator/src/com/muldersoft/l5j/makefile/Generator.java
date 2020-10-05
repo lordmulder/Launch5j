@@ -46,6 +46,9 @@ public class Generator {
                 for (int registry = 0; registry < 2; ++registry) {
                     for (int stayAlive = 1; stayAlive > -1; --stayAlive) {
                         for (int enableSplash = 1; enableSplash > -1; --enableSplash) {
+                            if((enableSplash > 0) && (enableGui == 0)) {
+                                continue;
+                            }
                             for (int encArgs = 1; encArgs > -1; --encArgs) {
                                 out.println(generateCommand(targets, salt, enableGui, wrapped, registry, stayAlive, enableSplash, encArgs));
                             }
@@ -114,7 +117,8 @@ public class Generator {
                         "-DL5J_ENABLE_SPLASH=%d " +
                         "-DL5J_ENCODE_ARGS=%d " +
                         "-o bin/launch5j_$(CPU_ARCH)%s.exe " +
-                        "src/head.c obj/common.$(CPU_ARCH).o",
+                        "src/head.c " + 
+                        "obj/common-%s.$(CPU_ARCH).o",
                         exeType,
                         enableGui,
                         wrapped,
@@ -122,14 +126,18 @@ public class Generator {
                         stayAlive,
                         enableSplash,
                         encArgs,
-                        nameSuffix));
+                        nameSuffix,
+                        exeType));
         if (enableSplash > 0) {
             cmdLine.append(" obj/splash_screen.$(CPU_ARCH).o");
         }
         if (registry > 0) {
             cmdLine.append(" obj/registry.$(CPU_ARCH).o");
         }
-        cmdLine.append(" $(LDFLAGS)\n");
+        if (enableGui > 0) {
+            cmdLine.append(" -lcomctl32");
+        }
+        cmdLine.append('\n');
         cmdLine.append("ifeq ($(DEBUG),0)\n");
         cmdLine.append(String.format("\tstrip bin/launch5j_$(CPU_ARCH)%s.exe\n", nameSuffix));
         cmdLine.append("endif\n");
@@ -139,7 +147,7 @@ public class Generator {
     private static String generateNameSuffix(final int enableGui, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
         final StringBuilder builder = new StringBuilder();
         if (enableGui == 0) {
-            append(builder, '_', "cli");
+            append(builder, '_', "nogui");
         }
         if (wrapped > 0) {
             append(builder, '_', "wrapped");
@@ -150,7 +158,7 @@ public class Generator {
         if (stayAlive == 0) {
             append(builder, '_', "nowait");
         }
-        if (enableSplash == 0) {
+        if ((enableGui > 0) && (enableSplash == 0)) {
             append(builder, '_', "nosplash");
         }
         if (encArgs == 0) {

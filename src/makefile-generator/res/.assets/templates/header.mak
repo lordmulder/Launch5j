@@ -40,9 +40,6 @@ else
 endif
 
 CFLAGS += -municode -march=$(MARCH) -mtune=$(MTUNE)
-LDFLAGS = -lcomctl32
-
-MANIFEST := tmp/assets/manifest.$(CPU_ARCH).xml
 
 # ==========================================================
 # Targets
@@ -57,20 +54,24 @@ initialize:
 	mkdir -p obj
 	mkdir -p tmp
 
+.PHONY: manifests
+manifests: initialize
+	mkdir -p $(@D)
+	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-console.xml > tmp/assets/manifest-console.$(CPU_ARCH).xml
+	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-windows.xml > tmp/assets/manifest-windows.$(CPU_ARCH).xml
+
 .PHONY: resources
-resources: initialize $(MANIFEST)
-	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/common.$(CPU_ARCH).o res/common.rc
+resources: manifests
+	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -o obj/common-console.$(CPU_ARCH).o res/common.rc
+	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -o obj/common-windows.$(CPU_ARCH).o res/common.rc
 	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/splash_screen.$(CPU_ARCH).o res/splash_screen.rc
 	windres -DL5J_CPU_ARCH=$(CPU_ARCH) -DL5J_BUILDNO=$(BUILDNO) -o obj/registry.$(CPU_ARCH).o res/registry.rc
 
-$(MANIFEST):
-	mkdir -p $(@D)
-	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest.xml > $@
-
 .PHONY: clean
 clean: initialize
-	$(RM) bin/*.$(SUFFIX)
-	$(RM) obj/*.o
+	find bin -type f -delete
+	find obj -type f -delete
+	find tmp -type f -delete
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Binaries

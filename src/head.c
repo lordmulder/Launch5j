@@ -53,6 +53,11 @@
 #define L5J_WAIT_FOR_WINDOW 1
 #endif
 
+// Checks
+#if L5J_ENABLE_SPLASH && (!L5J_ENABLE_GUI)
+#error L5J_ENABLE_SPLASH requires L5J_ENABLE_GUI to be enabled!
+#endif
+
 // Const
 static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptopenjdk.net/";
 static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin";
@@ -1447,25 +1452,31 @@ static void enable_slunk_mode(const HWND hwnd)
 /* Single instance                                                          */
 /* ======================================================================== */
 
-static ULONGLONG hash_code(const BYTE *const message, const size_t message_len)
+static void hash_update(ULONGLONG *const hash, const BYTE *const data, const size_t length)
+{
+    for (size_t iter = 0U; iter < length; ++iter)
+    {
+        *hash ^= data[iter];
+        *hash *= 0x00000100000001B3ull;
+    }
+}
+
+static ULONGLONG hash_code(const DWORD salt, const BYTE *const message, const size_t message_len)
 {
     ULONGLONG hash = 0xCBF29CE484222325ull;
-    for (size_t iter = 0U; iter < message_len; ++iter)
-    {
-        hash ^= message[iter];
-        hash *= 0x00000100000001B3ull;
-    }
+    hash_update(&hash, (BYTE*)&salt, sizeof(DWORD));
+    hash_update(&hash, message, message_len);
     return hash;
 }
 
 static BOOL initialize_mutex(HANDLE *const handle, const wchar_t *const mutex_name)
 {
-    static const char *const BUILD_TIME = __DATE__ " " __TIME__;
+    const size_t name_length = sizeof(wchar_t) * wcslen(mutex_name);
 
-    const ULONGLONG hashcode_0 = hash_code((const BYTE*)BUILD_TIME, sizeof(wchar_t) * strlen(BUILD_TIME));
-    const ULONGLONG hashcode_1 = hash_code((const BYTE*)mutex_name, sizeof(wchar_t) * wcslen(mutex_name));
+    const ULONGLONG hash_0 = hash_code(0x6CAD7ECA, (const BYTE*)mutex_name, name_length);
+    const ULONGLONG hash_1 = hash_code(0xE2503816, (const BYTE*)mutex_name, name_length);
 
-    const wchar_t *const mutex_uuid = aswprintf(L"l5j.%016llX%016llX", hashcode_0, hashcode_1);
+    const wchar_t *const mutex_uuid = aswprintf(L"l5j.%016I64X%016I64X", hash_0, hash_1);
     if (!mutex_uuid)
     {
         return TRUE; /*better safe than sorry*/
