@@ -21,9 +21,8 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /*
@@ -31,16 +30,23 @@ import java.util.regex.Pattern;
  */
 public class Generator {
 
-    private final static String EMPTY = "";
-    private final static Pattern RTRIM = Pattern.compile("\\s+$");
+    private static final String EMPTY = "";
+    private static final Pattern RTRIM = Pattern.compile("\\s+$");
 
+    private static final MessageDigest SHA256;
+    static {
+        try {
+            SHA256 = MessageDigest.getInstance("SHA-256");
+        } catch (final NoSuchAlgorithmException e) {
+            throw new Error(e);
+        }
+    }
+    
     public static void main(String[] args) throws IOException {
-        final List<String> targets = new ArrayList<String>();
-        final String salt = Instant.now().toString();
         final PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8.name());
-
         outputTemplate(out, "header");
 
+        final LinkedHashSet<String> targets = new LinkedHashSet<String>();
         for (int enableGui = 1; enableGui > -1; --enableGui) {
             for (int wrapped = 0; wrapped < 2; ++wrapped) {
                 for (int registry = 0; registry < 2; ++registry) {
@@ -50,7 +56,7 @@ public class Generator {
                                 continue;
                             }
                             for (int encArgs = 1; encArgs > -1; --encArgs) {
-                                out.println(generateCommand(targets, salt, enableGui, wrapped, registry, stayAlive, enableSplash, encArgs));
+                                out.println(generateCommand(targets, enableGui, wrapped, registry, stayAlive, enableSplash, encArgs));
                             }
                         }
                     }
@@ -99,10 +105,12 @@ public class Generator {
         out.println();
     }
 
-    private static String generateCommand(final List<String> targets, final String salt, final int enableGui, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
+    private static String generateCommand(final Set<String> targets, final int enableGui, final int wrapped, final int registry, final int stayAlive, final int enableSplash, final int encArgs) {
         final String nameSuffix = generateNameSuffix(enableGui, wrapped, registry, stayAlive, enableSplash, encArgs);
-        final String targetName = "l5j_" + hash(nameSuffix, salt);
-        targets.add(targetName);
+        final String targetName = "launch5j_" + hash(nameSuffix);
+        if(!targets.add(targetName)) {
+            throw new Error("Hash collision detected!");
+        }
         final String exeType = (enableGui > 0) ? "windows" : "console";
         final StringBuilder cmdLine = new StringBuilder();
         cmdLine.append(String.format(".PHONY: %s\n", targetName));
@@ -118,7 +126,8 @@ public class Generator {
                         "-DL5J_ENCODE_ARGS=%d " +
                         "-o bin/launch5j_$(CPU_ARCH)%s.exe " +
                         "src/head.c " + 
-                        "obj/common-%s.$(CPU_ARCH).o",
+                        "obj/common.$(CPU_ARCH).o " +
+                        "obj/manifest-%s.$(CPU_ARCH).o",
                         exeType,
                         enableGui,
                         wrapped,
@@ -174,15 +183,8 @@ public class Generator {
         builder.append(string);
     }
 
-    private static String hash(final String str, final String salt) {
-        final MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (final NoSuchAlgorithmException e) {
-            throw new Error(e);
-        }
-        digest.update(salt.getBytes(StandardCharsets.UTF_8));
-        final byte[] hash = digest.digest(str.getBytes(StandardCharsets.UTF_8));
-        return String.format("%02X%02X%02X%02X", hash[31], hash[30], hash[29], hash[28]);
+    private static String hash(final String str) {
+        final byte[] hash = SHA256.digest(str.getBytes(StandardCharsets.UTF_8));
+        return String.format("%02X%02X", hash[30], hash[31]);
     }
 }

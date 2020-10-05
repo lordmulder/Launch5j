@@ -1357,7 +1357,7 @@ static const wchar_t *describe_system_error(const DWORD error_code)
 #if L5J_ENABLE_GUI
 #define show_message(HWND, FLAGS, TITLE, TEXT) MessageBoxW((HWND), (TEXT), (TITLE), (FLAGS))
 #else
-#define show_message(HWND, FLAGS, TITLE, TEXT) ({ __ms_fwprintf(stderr, L"%s\n", (TEXT)); fflush(stderr); IDCANCEL; })
+#define show_message(HWND, FLAGS, TITLE, TEXT) ({ __ms_fwprintf(stderr, L"[%s]\n\n%s\n", (TITLE), (TEXT)); fflush(stderr); IDCANCEL; })
 #endif
 
 static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *const title, const wchar_t *const format, ...)
@@ -1477,7 +1477,7 @@ static BOOL initialize_mutex(HANDLE *const handle, const wchar_t *const mutex_na
     const ULONGLONG hash_0 = hash_code(0x6CAD7ECA, (const BYTE*)mutex_name, name_length);
     const ULONGLONG hash_1 = hash_code(0xE2503816, (const BYTE*)mutex_name, name_length);
 
-    const wchar_t *const mutex_uuid = aswprintf(L"l5j.%016I64X%016I64X", hash_0, hash_1);
+    const wchar_t *const mutex_uuid = aswprintf(L"l5j.%016I64x%016I64x", hash_0, hash_1);
     if (!mutex_uuid)
     {
         return TRUE; /*better safe than sorry*/

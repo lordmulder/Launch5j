@@ -1,0 +1,33 @@
+/************************************************************/
+/* Launch5j, by LoRd_MuldeR <MuldeR2@GMX.de>                */
+/* Java JAR wrapper for creating Windows native executables */
+/* https://github.com/lordmulder/                           */
+/*                                                          */
+/* This work has been released under the MIT license.       */
+/* Please see LICENSE.TXT for details!                      */
+/*                                                          */
+/* ACKNOWLEDGEMENT                                          */
+/* This project is partly inspired by the Launch4j project: */
+/* https://sourceforge.net/p/launch4j/                      */
+/************************************************************/
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "WinResrc.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#include "../src/resource.h"
+
+#ifndef L5J_CPU_ARCH
+#error  L5J_CPU_ARCH is not defined!
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Manifest
+/////////////////////////////////////////////////////////////////////////////
+
+#define L5J_MANIFEST_GLUE1(X) #X
+#define L5J_MANIFEST_GLUE2(X,Y,Z) L5J_MANIFEST_GLUE1(X.Y.Z)
+#define L5J_MANIFEST_GLUE3(X,Y,Z) L5J_MANIFEST_GLUE2(X,Y,Z)
+#define L5J_MANIFEST_STR L5J_MANIFEST_GLUE3(../tmp/assets/manifest-console,L5J_CPU_ARCH,xml)
+
+1 RT_MANIFEST L5J_MANIFEST_STR

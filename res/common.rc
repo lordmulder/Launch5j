@@ -17,14 +17,6 @@
 
 #include "../src/resource.h"
 
-#ifndef L5J_CPU_ARCH
-#error  L5J_CPU_ARCH is not defined!
-#endif
-
-#ifndef L5J_ENABLE_GUI
-#error  L5J_ENABLE_GUI is not defined!
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
@@ -94,19 +86,3 @@ BEGIN
         VALUE "Translation", 0x0, 1200
     END
 END
-
-/////////////////////////////////////////////////////////////////////////////
-// Manifest
-/////////////////////////////////////////////////////////////////////////////
-
-#if L5J_ENABLE_GUI
-#define MANIFEST_SUFFIX windows
-#else
-#define MANIFEST_SUFFIX console
-#endif
-
-#define L5J_MANIFEST_GLUE1(V,W,X,Y,Z) #V #W #X #Y #Z
-#define L5J_MANIFEST_GLUE2(V,W,X,Y,Z) L5J_MANIFEST_GLUE1(V,W,X,Y,Z)
-#define L5J_MANIFEST_STR L5J_MANIFEST_GLUE2(../tmp/assets/manifest-,MANIFEST_SUFFIX,.,L5J_CPU_ARCH,.xml)
-
-1 RT_MANIFEST L5J_MANIFEST_STR
