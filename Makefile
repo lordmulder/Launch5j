@@ -56,7 +56,7 @@ initialize:
 
 .PHONY: manifests
 manifests: initialize
-	mkdir -p $(@D)
+	@mkdir -p tmp/assets
 	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-console.xml > tmp/assets/manifest-console.$(CPU_ARCH).xml
 	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-windows.xml > tmp/assets/manifest-windows.$(CPU_ARCH).xml
 
@@ -77,337 +77,337 @@ clean: initialize
 # Binaries
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.PHONY: l5j_AC5E0F7B
-l5j_AC5E0F7B: resources
+.PHONY: l5j_3408C391
+l5j_3408C391: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH).exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH).exe
 endif
 
-.PHONY: l5j_D3650C28
-l5j_D3650C28: resources
+.PHONY: l5j_7136B6DC
+l5j_7136B6DC: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_noenc.exe
 endif
 
-.PHONY: l5j_07E2C001
-l5j_07E2C001: resources
+.PHONY: l5j_A9CBE2BD
+l5j_A9CBE2BD: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nosplash.exe
 endif
 
-.PHONY: l5j_1A7CF93E
-l5j_1A7CF93E: resources
+.PHONY: l5j_2FFF81A3
+l5j_2FFF81A3: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_E528C43C
-l5j_E528C43C: resources
+.PHONY: l5j_37E2DD90
+l5j_37E2DD90: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nowait.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nowait.exe
 endif
 
-.PHONY: l5j_F3DBFECB
-l5j_F3DBFECB: resources
+.PHONY: l5j_2FF174B2
+l5j_2FF174B2: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nowait_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nowait_noenc.exe
 endif
 
-.PHONY: l5j_3714ED45
-l5j_3714ED45: resources
+.PHONY: l5j_A5086989
+l5j_A5086989: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nowait_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nowait_nosplash.exe
 endif
 
-.PHONY: l5j_8EB7DCEA
-l5j_8EB7DCEA: resources
+.PHONY: l5j_57CF673B
+l5j_57CF673B: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nowait_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nowait_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_A6ADF807
-l5j_A6ADF807: resources
+.PHONY: l5j_D9F32FAB
+l5j_D9F32FAB: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_registry.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry.exe
 endif
 
-.PHONY: l5j_FD9D0A03
-l5j_FD9D0A03: resources
+.PHONY: l5j_1DB1893C
+l5j_1DB1893C: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_registry_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_noenc.exe
 endif
 
-.PHONY: l5j_715A4611
-l5j_715A4611: resources
+.PHONY: l5j_CF357B5F
+l5j_CF357B5F: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_registry_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nosplash.exe
 endif
 
-.PHONY: l5j_2342BF21
-l5j_2342BF21: resources
+.PHONY: l5j_F29626A2
+l5j_F29626A2: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_registry_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_CA4AEEEE
-l5j_CA4AEEEE: resources
+.PHONY: l5j_EED289B0
+l5j_EED289B0: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_registry_nowait.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nowait.exe
 endif
 
-.PHONY: l5j_CD6A91A5
-l5j_CD6A91A5: resources
+.PHONY: l5j_42987161
+l5j_42987161: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_registry_nowait_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nowait_noenc.exe
 endif
 
-.PHONY: l5j_9112B169
-l5j_9112B169: resources
+.PHONY: l5j_00EE138C
+l5j_00EE138C: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash.exe
 endif
 
-.PHONY: l5j_0BF455CD
-l5j_0BF455CD: resources
+.PHONY: l5j_58538121
+l5j_58538121: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_registry_nowait_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_A92217A7
-l5j_A92217A7: resources
+.PHONY: l5j_C02E308A
+l5j_C02E308A: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped.exe
 endif
 
-.PHONY: l5j_5C289D36
-l5j_5C289D36: resources
+.PHONY: l5j_E23ED2F0
+l5j_E23ED2F0: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_noenc.exe
 endif
 
-.PHONY: l5j_E2BC6FC3
-l5j_E2BC6FC3: resources
+.PHONY: l5j_82A3B0B4
+l5j_82A3B0B4: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nosplash.exe
 endif
 
-.PHONY: l5j_F8FAA925
-l5j_F8FAA925: resources
+.PHONY: l5j_4529DCBD
+l5j_4529DCBD: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_BD28CD8F
-l5j_BD28CD8F: resources
+.PHONY: l5j_30FFBD22
+l5j_30FFBD22: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait.exe
 endif
 
-.PHONY: l5j_3B402EED
-l5j_3B402EED: resources
+.PHONY: l5j_8F60BF3F
+l5j_8F60BF3F: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait_noenc.exe
 endif
 
-.PHONY: l5j_E3F9AD8D
-l5j_E3F9AD8D: resources
+.PHONY: l5j_81396422
+l5j_81396422: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash.exe
 endif
 
-.PHONY: l5j_66F05454
-l5j_66F05454: resources
+.PHONY: l5j_08580B94
+l5j_08580B94: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_nowait_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_33F9ED38
-l5j_33F9ED38: resources
+.PHONY: l5j_ED6E61AB
+l5j_ED6E61AB: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry.exe
 endif
 
-.PHONY: l5j_5E944098
-l5j_5E944098: resources
+.PHONY: l5j_9A3A029E
+l5j_9A3A029E: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_noenc.exe
 endif
 
-.PHONY: l5j_94CDE204
-l5j_94CDE204: resources
+.PHONY: l5j_E9BFEAD2
+l5j_E9BFEAD2: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash.exe
 endif
 
-.PHONY: l5j_7A0A8164
-l5j_7A0A8164: resources
+.PHONY: l5j_6693C2C3
+l5j_6693C2C3: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_C5E0DAF5
-l5j_C5E0DAF5: resources
+.PHONY: l5j_F367C257
+l5j_F367C257: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait.exe
 endif
 
-.PHONY: l5j_4ABEF3E6
-l5j_4ABEF3E6: resources
+.PHONY: l5j_A0ECB342
+l5j_A0ECB342: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=1 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/splash_screen.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_noenc.exe
 endif
 
-.PHONY: l5j_F7A60AA5
-l5j_F7A60AA5: resources
+.PHONY: l5j_B40D57DA
+l5j_B40D57DA: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash.exe
 endif
 
-.PHONY: l5j_AA445906
-l5j_AA445906: resources
+.PHONY: l5j_7C40A82A
+l5j_7C40A82A: resources
 	$(CC) $(CFLAGS) -mwindows -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=1 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash_noenc.exe src/head.c obj/common-windows.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o -lcomctl32
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_wrapped_registry_nowait_nosplash_noenc.exe
 endif
 
-.PHONY: l5j_E5119C07
-l5j_E5119C07: resources
+.PHONY: l5j_50BA8B12
+l5j_50BA8B12: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui.exe
 endif
 
-.PHONY: l5j_05FC33A2
-l5j_05FC33A2: resources
+.PHONY: l5j_49A8C2A3
+l5j_49A8C2A3: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_noenc.exe
 endif
 
-.PHONY: l5j_FD1A2285
-l5j_FD1A2285: resources
+.PHONY: l5j_FE360AA8
+l5j_FE360AA8: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_nowait.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_nowait.exe
 endif
 
-.PHONY: l5j_0A8603AF
-l5j_0A8603AF: resources
+.PHONY: l5j_B1DC1479
+l5j_B1DC1479: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_nowait_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_nowait_noenc.exe
 endif
 
-.PHONY: l5j_04592BD0
-l5j_04592BD0: resources
+.PHONY: l5j_3945741E
+l5j_3945741E: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_registry.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_registry.exe
 endif
 
-.PHONY: l5j_CF815DD1
-l5j_CF815DD1: resources
+.PHONY: l5j_3D82C154
+l5j_3D82C154: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_registry_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_registry_noenc.exe
 endif
 
-.PHONY: l5j_15FAE2C7
-l5j_15FAE2C7: resources
+.PHONY: l5j_D5C53DAC
+l5j_D5C53DAC: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_registry_nowait.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_registry_nowait.exe
 endif
 
-.PHONY: l5j_5256A700
-l5j_5256A700: resources
+.PHONY: l5j_5A1AA93B
+l5j_5A1AA93B: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=0 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_registry_nowait_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_registry_nowait_noenc.exe
 endif
 
-.PHONY: l5j_735DFE78
-l5j_735DFE78: resources
+.PHONY: l5j_18F10B52
+l5j_18F10B52: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped.exe
 endif
 
-.PHONY: l5j_4897DF6D
-l5j_4897DF6D: resources
+.PHONY: l5j_823D747D
+l5j_823D747D: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_noenc.exe
 endif
 
-.PHONY: l5j_C11CE462
-l5j_C11CE462: resources
+.PHONY: l5j_07336CFC
+l5j_07336CFC: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_nowait.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_nowait.exe
 endif
 
-.PHONY: l5j_00128557
-l5j_00128557: resources
+.PHONY: l5j_1173C153
+l5j_1173C153: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=0 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_nowait_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_nowait_noenc.exe
 endif
 
-.PHONY: l5j_7B89D793
-l5j_7B89D793: resources
+.PHONY: l5j_95FF26D5
+l5j_95FF26D5: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry.exe
 endif
 
-.PHONY: l5j_B07DBB1C
-l5j_B07DBB1C: resources
+.PHONY: l5j_3E68DF63
+l5j_3E68DF63: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=1 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_noenc.exe
 endif
 
-.PHONY: l5j_ABA57DBA
-l5j_ABA57DBA: resources
+.PHONY: l5j_A857258D
+l5j_A857258D: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=1 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_nowait.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_nowait.exe
 endif
 
-.PHONY: l5j_20B99C28
-l5j_20B99C28: resources
+.PHONY: l5j_487016A6
+l5j_487016A6: resources
 	$(CC) $(CFLAGS) -mconsole -DL5J_BUILDNO=$(BUILDNO) -DL5J_ENABLE_GUI=0 -DL5J_JAR_FILE_WRAPPED=1 -DL5J_DETECT_REGISTRY=1 -DL5J_STAY_ALIVE=0 -DL5J_ENABLE_SPLASH=0 -DL5J_ENCODE_ARGS=0 -o bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_nowait_noenc.exe src/head.c obj/common-console.$(CPU_ARCH).o obj/registry.$(CPU_ARCH).o
 ifeq ($(DEBUG),0)
 	strip bin/launch5j_$(CPU_ARCH)_nogui_wrapped_registry_nowait_noenc.exe
@@ -419,52 +419,52 @@ endif
 
 .PHONY: all
 all: \
-  l5j_AC5E0F7B \
-  l5j_D3650C28 \
-  l5j_07E2C001 \
-  l5j_1A7CF93E \
-  l5j_E528C43C \
-  l5j_F3DBFECB \
-  l5j_3714ED45 \
-  l5j_8EB7DCEA \
-  l5j_A6ADF807 \
-  l5j_FD9D0A03 \
-  l5j_715A4611 \
-  l5j_2342BF21 \
-  l5j_CA4AEEEE \
-  l5j_CD6A91A5 \
-  l5j_9112B169 \
-  l5j_0BF455CD \
-  l5j_A92217A7 \
-  l5j_5C289D36 \
-  l5j_E2BC6FC3 \
-  l5j_F8FAA925 \
-  l5j_BD28CD8F \
-  l5j_3B402EED \
-  l5j_E3F9AD8D \
-  l5j_66F05454 \
-  l5j_33F9ED38 \
-  l5j_5E944098 \
-  l5j_94CDE204 \
-  l5j_7A0A8164 \
-  l5j_C5E0DAF5 \
-  l5j_4ABEF3E6 \
-  l5j_F7A60AA5 \
-  l5j_AA445906 \
-  l5j_E5119C07 \
-  l5j_05FC33A2 \
-  l5j_FD1A2285 \
-  l5j_0A8603AF \
-  l5j_04592BD0 \
-  l5j_CF815DD1 \
-  l5j_15FAE2C7 \
-  l5j_5256A700 \
-  l5j_735DFE78 \
-  l5j_4897DF6D \
-  l5j_C11CE462 \
-  l5j_00128557 \
-  l5j_7B89D793 \
-  l5j_B07DBB1C \
-  l5j_ABA57DBA \
-  l5j_20B99C28
+  l5j_3408C391 \
+  l5j_7136B6DC \
+  l5j_A9CBE2BD \
+  l5j_2FFF81A3 \
+  l5j_37E2DD90 \
+  l5j_2FF174B2 \
+  l5j_A5086989 \
+  l5j_57CF673B \
+  l5j_D9F32FAB \
+  l5j_1DB1893C \
+  l5j_CF357B5F \
+  l5j_F29626A2 \
+  l5j_EED289B0 \
+  l5j_42987161 \
+  l5j_00EE138C \
+  l5j_58538121 \
+  l5j_C02E308A \
+  l5j_E23ED2F0 \
+  l5j_82A3B0B4 \
+  l5j_4529DCBD \
+  l5j_30FFBD22 \
+  l5j_8F60BF3F \
+  l5j_81396422 \
+  l5j_08580B94 \
+  l5j_ED6E61AB \
+  l5j_9A3A029E \
+  l5j_E9BFEAD2 \
+  l5j_6693C2C3 \
+  l5j_F367C257 \
+  l5j_A0ECB342 \
+  l5j_B40D57DA \
+  l5j_7C40A82A \
+  l5j_50BA8B12 \
+  l5j_49A8C2A3 \
+  l5j_FE360AA8 \
+  l5j_B1DC1479 \
+  l5j_3945741E \
+  l5j_3D82C154 \
+  l5j_D5C53DAC \
+  l5j_5A1AA93B \
+  l5j_18F10B52 \
+  l5j_823D747D \
+  l5j_07336CFC \
+  l5j_1173C153 \
+  l5j_95FF26D5 \
+  l5j_3E68DF63 \
+  l5j_A857258D \
+  l5j_487016A6
 

@@ -56,7 +56,7 @@ initialize:
 
 .PHONY: manifests
 manifests: initialize
-	mkdir -p $(@D)
+	@mkdir -p tmp/assets
 	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-console.xml > tmp/assets/manifest-console.$(CPU_ARCH).xml
 	sed -e 's/$${{version}}/$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH).$(BUILDNO)/g' -e 's/$${{processorArchitecture}}/$(CPU_ARCH)/g' res/assets/manifest-windows.xml > tmp/assets/manifest-windows.$(CPU_ARCH).xml
 
