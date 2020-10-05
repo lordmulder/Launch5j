@@ -10,26 +10,49 @@
 
 There currently are two different ways to use Launch5j with your application code:
 
-* ***Use the launcher executable with a separate JAR file***  
+* **Use the launcher executable with a separate JAR file**  
   
   Simply put the launcher executable (`launch5j.exe`) and your JAR file into the same directory. Launch5j will automatically detect the path of the JAR file based on the location of the executable file. More specifically, Launch5j detects the full path of the executable file and then replaces the `.exe` file extension with a `.jar` file extension. Of course, you can rename the `launch5j.exe` executable to whatever you prefer.
   
-  *For example:* If you application's JAR file is called `bazinga.jar`, pick the Launch5j variant of your choice, rename the Launch5j executable to `bazinga.exe`, and put these two files (JAR + EXE) into the “install”directory.
+  ***For example:*** Assuming your application's JAR file is called `thingamabob.jar`, pick the Launch5j launcher variant of your choice (**no** `wrapped` variant though!), rename the launcher executable to `thingamabob.exe`, and put these two files into the “install” directory. Also, the Java runtime should be located in the `runtime` sub-directory within the “install” directory &ndash; unless you are using the `registry` variant of Launch5j.
 
-* ***Combine the launcher executable and the JAR file (“wrapping”)***  
+  ```
+  install_dir
+  ├── thingamabob.exe
+  ├── thingamabob.jar
+  ├── runtime
+  │   └── bin
+  │       ├── java.exe
+  │       ├── javaw.exe
+  │       └── [...]
+  └── [...]
+  ```
+
+* **Combine the launcher executable and the JAR file (“wrapping”)**  
   
-  In order to combine the launcher executable (`launch5j_wrapped.exe`) and the JAR file to a *single* file, you can simply concatenate these files. The executable launcher must go before the JAR file content. There are many ways to achieve this, but one method is by running the following **copy** command-line in the terminal:
+  In order to combine the Launch5j launcher executable and the JAR file to a ***single*** file, you can simply *concatenate* these two files. For this purpose, you have to choose one of the `wrapped` variants of Launch5j. Also, the executable launcher code must go before the JAR file content. There are many ways to achieve this, but probably the most simple method is running the following **copy** command-line in the terminal:
   
-      copy /B launch5j_wrapped.exe + bazinga.jar bazinga.exe
+      copy /B launch5j_wrapped.exe + thingamabob.jar thingamabob.exe
   
-  If you are building you application with [**Apache Ant**](https://ant.apache.org/), consider using the `concat` task like this:
+  If you are building your application with [**Apache Ant**](https://ant.apache.org/), consider using the `concat` task like this:
   
-      <concat destfile="bazinga.exe" binary="true">
+      <concat destfile="thingamabob.exe" binary="true">
          <fileset file="launch5j_wrapped.exe"/>
-         <fileset file="bazinga.jar"/>
+         <fileset file="thingamabob.jar"/>
       </concat>
 
-  The resulting `bazinga.exe` will be fully self-contained and is the only file you'll need to ship.
+  The resulting `thingamabob.exe` is fully self-contained, **no** separate JAR file needs to be shipped. Still, a Java runtime is required to run the application! The Java runtime should be located in the `runtime` sub-directory within the “install” directory &ndash; unless you are using the `registry` variant of Launch5j.
+
+  ```
+  install_dir
+  ├── thingamabob.exe
+  ├── runtime
+  │   └── bin
+  │       ├── java.exe
+  │       ├── javaw.exe
+  │       └── [...]
+  └── [...]
+  ```
 
   **Warning:** Code signing, as with Microsoft&reg;'s `SignTool`, probably does **not** work with the “wrapped” executable file! If code signing is a requirement, please use a *separate* JAR file and just sing the launcher executable.
 
@@ -38,11 +61,16 @@ There currently are two different ways to use Launch5j with your application cod
 
 Launch5j executables come in a number of variants, allowing you to pick the most suitable one for your project:
 
+* **`nogui`**  
+  No graphical user interface is created and the Java application is launched via the `java.exe` (console mode) program; default variant launches the Java application via the `javaw.exe` (windowed mode) program.
+  
+  *Note:* If using this variant, the program should be called from within a terminal window!
+
 * **`wrapped`**  
   Expects that the JAR file and the executable launcher have been combined to a *single* file; default variant expects that a separate JAR file is present in the same directory where the executable launcher resides.
 
 * **`registry`**  
-  Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `/runtime` path relative to the location of the executable launcher.
+  Tries to automatically detect the install path of the JRE from the Windows registry; default variant expects the JRE to be located in the `runtime` path relative to the location of the executable launcher.
   
   At this time, the following Java distributions can be detected from the registry:
   - [Oracle JDK (JavaSoft)](https://www.oracle.com/java/technologies/javase-downloads.html)
@@ -51,7 +79,7 @@ Launch5j executables come in a number of variants, allowing you to pick the most
   - [Zulu OpenJDK](https://www.azul.com/downloads/zulu-community/)
 
   Regarding the different available distributions of Java, please refer to this document:  
-  [*Java Is Still Free*](https://docs.google.com/document/d/1nFGazvrCvHMZJgFstlbzoHjpAVwv5DEdnaBr_5pKuHo/preview)
+  [***Java Is Still Free***](https://docs.google.com/document/d/1nFGazvrCvHMZJgFstlbzoHjpAVwv5DEdnaBr_5pKuHo/preview)
 
 * **`nowait`**  
   Does **not** keep the launcher executable alive while the application is running; default variant keeps the launcher executable alive until the application terminates and then forwards the application's exit code.

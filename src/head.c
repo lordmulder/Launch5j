@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <direct.h>
+#include <fcntl.h>
 
 // Win32 API
 #include <Windows.h>
@@ -1356,7 +1357,7 @@ static const wchar_t *describe_system_error(const DWORD error_code)
 #if L5J_ENABLE_GUI
 #define show_message(HWND, FLAGS, TITLE, TEXT) MessageBoxW((HWND), (TEXT), (TITLE), (FLAGS))
 #else
-#define show_message(HWND, FLAGS, TITLE, TEXT) ({ const int _retval = __ms_fwprintf(stderr, L"%s\n", (TEXT)); fflush(stderr); _retval; })
+#define show_message(HWND, FLAGS, TITLE, TEXT) ({ __ms_fwprintf(stderr, L"%s\n", (TEXT)); fflush(stderr); IDCANCEL; })
 #endif
 
 static int show_message_format(HWND hwnd, const DWORD flags, const wchar_t *const title, const wchar_t *const format, ...)
@@ -1417,17 +1418,17 @@ static void show_about_dialogue(const HWND hwnd)
     const wchar_t *const CPU_ARCH = L"x86";
 #endif
     show_message_format(hwnd, MB_ICONINFORMATION, L"About Launch5j",
-        L"Launch5j (%s), by LoRd_MuldeR <MuldeR2@GMX.de>\n"
-            L"v%u.%u.%u, build %u, created %s %s\n\n"
+        L"Launch5j, by LoRd_MuldeR <MuldeR2@GMX.de>\n"
+            L"Version: %u.%u.%u (%s), Build: #%u, %s\n\n"
             L"This work has been released under the MIT license.\n"
             L"For details, please see:\n"
             L"https://opensource.org/licenses/MIT\n\n"
             L"Check the project website for news and updates:\n"
             L"https://github.com/lordmulder/\n\n"
             L"Build options:\n"
-            L"JAR_FILE_WRAPPED=%d, DETECT_REGISTRY=%d, ENABLE_SPLASH=%d, STAY_ALIVE=%d, ENCODE_ARGS=%d, WAIT_FOR_WINDOW=%d",
-        CPU_ARCH, L5J_VERSION_MAJOR, L5J_VERSION_MINOR, L5J_VERSION_PATCH, L5J_BUILDNO, TEXT(__DATE__), TEXT(__TIME__),
-        L5J_JAR_FILE_WRAPPED, L5J_DETECT_REGISTRY, L5J_ENABLE_SPLASH, L5J_STAY_ALIVE, L5J_ENCODE_ARGS, L5J_WAIT_FOR_WINDOW);
+            L"L5J_ENABLE_GUI=%d, JAR_FILE_WRAPPED=%d, DETECT_REGISTRY=%d, ENABLE_SPLASH=%d, STAY_ALIVE=%d, ENCODE_ARGS=%d, WAIT_FOR_WINDOW=%d",
+        L5J_VERSION_MAJOR, L5J_VERSION_MINOR, L5J_VERSION_PATCH, CPU_ARCH, L5J_BUILDNO, TEXT(__DATE__),
+        L5J_ENABLE_GUI, L5J_JAR_FILE_WRAPPED, L5J_DETECT_REGISTRY, L5J_ENABLE_SPLASH, L5J_STAY_ALIVE, L5J_ENCODE_ARGS, L5J_WAIT_FOR_WINDOW);
 }
 
 static void enable_slunk_mode(const HWND hwnd)
@@ -1541,7 +1542,6 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     HANDLE mutex_handle = NULL;
     DWORD java_required_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
-    HWND hwnd = NULL;
     HGDIOBJ splash_image = NULL;
     BOOL have_screen_created = FALSE;
     PROCESS_INFORMATION process_info;
@@ -1563,9 +1563,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     app_heading = load_string(hinstance, ID_STR_HEADING);
 
     // Create the window
-#if L5J_ENABLE_GUI
-    hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hinstance, NULL);
-#endif
+    HWND hwnd = L5J_ENABLE_GUI ? CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"STATIC", APP_HEADING, WS_POPUP | SS_BITMAP, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hinstance, NULL) : NULL;
 
     // Show about screen?
     if (starts_with(cmd_line_args, L"--l5j-about"))
@@ -1657,7 +1655,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     }
 #else
     jre_relative_path = load_string(hinstance, ID_STR_JREPATH);
-    if (!(java_runtime_path = get_java_full_path(executable_path, jre_relative_path)))
+    if (!(java_runtime_path = get_java_full_path(executable_directory, jre_relative_path)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
         goto cleanup;
@@ -1761,9 +1759,28 @@ cleanup:
 /* Entry points                                                             */
 /* ======================================================================== */
 
+#define THE_NUMBER_OF_THE_BEAST 666
+
+static LONG WINAPI unhandeled_exception(EXCEPTION_POINTERS *ExceptionInfo)
+{
+    static const wchar_t *const ERROR_MESSAGE = L"\nUnhandeled exception error encountered. Exiting!";
+#if L5J_ENABLE_GUI
+    FatalAppExitW(0U, ERROR_MESSAGE);
+#else
+    DWORD chars_written;
+    WriteConsoleW(GetStdHandle(STD_ERROR_HANDLE), ERROR_MESSAGE, lstrlenW(ERROR_MESSAGE), &chars_written, NULL);
+#endif
+    TerminateProcess(GetCurrentProcess(), THE_NUMBER_OF_THE_BEAST);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 #if L5J_ENABLE_GUI
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+#ifdef NDEBUG
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    SetUnhandledExceptionFilter(unhandeled_exception);
+#endif
     return launch5j_main(hInstance, pCmdLine);
 }
 #else
@@ -1771,6 +1788,11 @@ extern HINSTANCE __mingw_winmain_hInstance;
 extern LPWSTR __mingw_winmain_lpCmdLine;
 int wmain(int argc, wchar_t **argv, wchar_t **envp)
 {
+#ifdef NDEBUG
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    SetUnhandledExceptionFilter(unhandeled_exception);
+#endif
+    _setmode(_fileno(stderr), _O_U8TEXT);
     return launch5j_main(__mingw_winmain_hInstance, __mingw_winmain_lpCmdLine);
 }
 #endif
