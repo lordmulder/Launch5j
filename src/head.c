@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <direct.h>
 #include <fcntl.h>
+#include <mbctype.h>
 
 // Win32 API
 #include <Windows.h>
@@ -77,6 +78,8 @@ static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 /* ======================================================================== */
 /* String routines                                                          */
 /* ======================================================================== */
+
+static const wchar_t SPACE_CHAR = L'\x20';
 
 #define XSTR(S) STR(S)
 #define STR(S) #S
@@ -145,13 +148,11 @@ static wchar_t *wcsndup (const wchar_t *const str, const size_t n)
     return result;
 }
 
-static const wchar_t *skip_leading_spaces(const wchar_t *const str)
+static const wchar_t *skip_leading_spaces(const wchar_t *str)
 {
     if (NOT_EMPTY(str))
     {
-        const wchar_t *result;
-        for (result = str; (*result) && iswspace(*result); ++result);
-        return result;
+        for (; (*str) && (*str <= SPACE_CHAR); ++str);
     }
     return str;
 }
@@ -1104,6 +1105,25 @@ static const wchar_t *get_java_full_path(const wchar_t *const jre_base_path, con
 /* Command-line                                                             */
 /* ======================================================================== */
 
+static const wchar_t *get_commandline_args(const wchar_t *cmd_line)
+{
+    BOOL double_quote = FALSE;
+    if (NOT_EMPTY(cmd_line))
+    {
+        cmd_line = skip_leading_spaces(cmd_line);
+        for (; (*cmd_line) && ((*cmd_line > SPACE_CHAR) || double_quote); ++cmd_line)
+        {
+            if (*cmd_line == L'"') double_quote = (!double_quote);
+            if (_ismbblead(*cmd_line) && cmd_line[1U]) ++cmd_line;
+        }
+        return skip_leading_spaces(cmd_line);
+    }
+    else
+    {
+        return L"";
+    }
+}
+
 static wchar_t *encode_commandline_args(const int argc, const LPWSTR *const argv)
 {
     if (!(argv && (argc > 0)))
@@ -1784,8 +1804,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     return launch5j_main(hInstance, pCmdLine);
 }
 #else
-extern HINSTANCE __mingw_winmain_hInstance;
-extern LPWSTR __mingw_winmain_lpCmdLine;
+extern IMAGE_DOS_HEADER __ImageBase;
+extern LPWSTR _wcmdln;
 int wmain(int argc, wchar_t **argv, wchar_t **envp)
 {
 #ifdef NDEBUG
@@ -1793,6 +1813,6 @@ int wmain(int argc, wchar_t **argv, wchar_t **envp)
     SetUnhandledExceptionFilter(unhandeled_exception);
 #endif
     _setmode(_fileno(stderr), _O_U8TEXT);
-    return launch5j_main(__mingw_winmain_hInstance, __mingw_winmain_lpCmdLine);
+    return launch5j_main((HINSTANCE) &__ImageBase, get_commandline_args(_wcmdln));
 }
 #endif

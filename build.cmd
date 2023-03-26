@@ -65,7 +65,7 @@ for %%m in (32,64) do (
 	echo Build %%m-Bit
 	echo ========================================================================
 	echo.
-	call "%MSYS2_DIR%\msys2_shell.cmd" -mingw%%m -no-start -defterm -where "%~dp0" -c "make -B -j8"
+	call "%MSYS2_DIR%\msys2_shell.cmd" -mingw%%m -no-start -defterm -where "%~dp0" -c "make -B"
 	if not "!ERRORLEVEL!"=="0" goto:BuildHasFailed
 	echo.
 )
