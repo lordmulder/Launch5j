@@ -73,8 +73,22 @@ static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 #error Unknown target platform!
 #endif
 
-// Boolean value
+/* ======================================================================== */
+/* Miscellaneous                                                            */
+/* ======================================================================== */
+
 #define BOOLIFY(X) ((X) ? TRUE : FALSE)
+#define PERCENT(X) (bound_value(1U, (X), 100U) / 100.0)
+
+static DWORD bound_value(const DWORD min_value, const DWORD value, const DWORD max_value)
+{
+    return max(min_value, min(max_value, value));
+}
+
+static ULONGLONG div_ceil(const ULONGLONG value, const ULONGLONG divisor)
+{
+    return (!(value % divisor)) ? (value / divisor) : ((value / divisor) + 1ULL);
+}
 
 /* ======================================================================== */
 /* String routines                                                          */
@@ -327,7 +341,7 @@ static BOOL running_on_64bit(void)
 static ULONGLONG get_physical_memory_size()
 {
     MEMORYSTATUSEX memory_status;
-    ZeroMemory(&memory_status, sizeof(MEMORYSTATUSEX));
+    SecureZeroMemory(&memory_status, sizeof(MEMORYSTATUSEX));
     memory_status.dwLength = sizeof(MEMORYSTATUSEX);
     if (GlobalMemoryStatusEx(&memory_status))
     {
@@ -1030,7 +1044,7 @@ static BOOL detect_java_runtime_scan_liberica(const wchar_t *const key_name, con
     return TRUE;
 }
 
-static const wchar_t *detect_java_runtime(const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max)
+static const wchar_t *detect_java_runtime(const DWORD required_bitness, const ULONGLONG required_ver_min, const ULONGLONG required_ver_max, DWORD *const bitness_out, ULONGLONG *const version_out)
 {
     typedef struct { UINT mode; const wchar_t *path; } reg_key_t;
     static const reg_key_t REG_KEYS[] =
@@ -1044,8 +1058,8 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
     };
 
     const wchar_t *runtime_path = NULL;
-    DWORD bitness = 0U;
-    ULONGLONG version = 0U;
+    *bitness_out = 0U;
+    *version_out = 0U;
 
     for (UINT i = running_on_64bit() ? 0U : 1U; i < 2U; ++i)
     {
@@ -1056,7 +1070,7 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
             {
                 { required_bitness, required_ver_min, required_ver_max },
                 { HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit },
-                { bitness, version, NULL }
+                { *bitness_out, *version_out, NULL }
             };
             switch(REG_KEYS[j].mode)
             {
@@ -1072,14 +1086,14 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
             }
             if(search_state.result.runtime_path)
             {
-                bitness = search_state.result.bitness;
-                version = search_state.result.version;
+                *bitness_out = search_state.result.bitness;
+                *version_out = search_state.result.version;
                 SET_STRING(runtime_path, search_state.result.runtime_path);
             }
         }
     }
 
-    if (((required_bitness == 0U) || (bitness == required_bitness)) && (version >= required_ver_min) && (version < required_ver_max) && runtime_path)
+    if (((required_bitness == 0U) || (*bitness_out == required_bitness)) && (*version_out >= required_ver_min) && (*version_out < required_ver_max) && runtime_path)
     {
         return runtime_path;
     }
@@ -1135,7 +1149,7 @@ static const wchar_t *get_commandline_args(const wchar_t *cmd_line)
     }
     else
     {
-        return L"";
+        return L""; /*no args*/
     }
 }
 
@@ -1214,13 +1228,13 @@ static const wchar_t *encode_commandline_str(const wchar_t *const command_line)
     return encoded;
 }
 
-const wchar_t *create_heap_size_parameters(const DWORD jvm_heap_percent_min, const DWORD jvm_heap_percent_max, const wchar_t *const jvm_extra_args)
+const wchar_t *create_heap_size_parameters(const DWORD jvm_heap_percent_min, const DWORD jvm_heap_percent_max, const wchar_t *const jvm_extra_args, const DWORD heap_size_limit)
 {
     const ULONGLONG physical_memory_size = get_physical_memory_size();
-    if (physical_memory_size > 0ULL) 
+    if (physical_memory_size > 33554432ULL) 
     {
-        const DWORD heap_size_mbytes_min = ((jvm_heap_percent_min > 0U) && (jvm_heap_percent_min <= 100U)) ? ((DWORD)((((ULONGLONG)((jvm_heap_percent_min / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE)) : 0U;
-        const DWORD heap_size_mbytes_max = ((jvm_heap_percent_max > 0U) && (jvm_heap_percent_max <= 100U)) ? ((DWORD)((((ULONGLONG)((jvm_heap_percent_max / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE)) : 0U;
+        const DWORD heap_size_mbytes_min = jvm_heap_percent_min ? bound_value(16U, (DWORD)div_ceil((ULONGLONG)(PERCENT(jvm_heap_percent_min) * physical_memory_size), BYTES_PER_MEGABYTE), heap_size_limit) : 0U;
+        const DWORD heap_size_mbytes_max = jvm_heap_percent_max ? bound_value(16U, (DWORD)div_ceil((ULONGLONG)(PERCENT(jvm_heap_percent_max) * physical_memory_size), BYTES_PER_MEGABYTE), heap_size_limit) : 0U;
         if ((heap_size_mbytes_min > 0U) && (heap_size_mbytes_max >= heap_size_mbytes_min))
         {
             return AVAILABLE(jvm_extra_args)
@@ -1230,8 +1244,8 @@ const wchar_t *create_heap_size_parameters(const DWORD jvm_heap_percent_min, con
         else if ((heap_size_mbytes_min > 0U) || (heap_size_mbytes_max > 0U))
         {
             return AVAILABLE(jvm_extra_args)
-                ? aswprintf(L"-Xm%c%um %s", (heap_size_mbytes_min > 0U) ? L's' : L'x', (heap_size_mbytes_min > 0U) ? heap_size_mbytes_min : heap_size_mbytes_max, jvm_extra_args)
-                : aswprintf(L"-Xm%c%um",    (heap_size_mbytes_min > 0U) ? L's' : L'x', (heap_size_mbytes_min > 0U) ? heap_size_mbytes_min : heap_size_mbytes_max);
+                ? aswprintf(L"-Xm%c%um %s", (heap_size_mbytes_max > 0U) ? L'x' : L's', (heap_size_mbytes_max > 0U) ? heap_size_mbytes_max : heap_size_mbytes_min, jvm_extra_args)
+                : aswprintf(L"-Xm%c%um",    (heap_size_mbytes_max > 0U) ? L'x' : L's', (heap_size_mbytes_max > 0U) ? heap_size_mbytes_max : heap_size_mbytes_min);
         }
     }
     return NULL;
@@ -1585,11 +1599,6 @@ static void destroy_window(HWND *const hwnd)
     }
 }
 
-static DWORD bound_value(const DWORD min_value, const DWORD value, const DWORD max_value)
-{
-    return max(min_value, min(max_value, value));
-}
-
 /* ======================================================================== */
 /* MAIN                                                                     */
 /* ======================================================================== */
@@ -1603,8 +1612,8 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL,
         *java_runtime_path = NULL, *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
     HANDLE mutex_handle = NULL;
-    DWORD java_required_bitness = 0U, jvm_heap_percent_min = 0U, jvm_heap_percent_max = 0U;
-    ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
+    DWORD java_required_bitness = 0U, jvm_heap_percent_min = 0U, jvm_heap_percent_max = 0U, jvm_bitness = 0U;
+    ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL, jvm_version = 0ULL;
     HGDIOBJ splash_image = NULL;
     BOOL have_screen_created = FALSE;
     PROCESS_INFORMATION process_info;
@@ -1710,7 +1719,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     java_required_ver_min = load_java_version(hinstance, ID_STR_JAVAMIN, (8ull << 48));
     java_required_ver_max = load_java_version(hinstance, ID_STR_JAVAMAX, MAXULONGLONG);
     java_required_bitness = load_java_bitness(hinstance, ID_STR_BITNESS);
-    if (!(java_runtime_path = detect_java_runtime(java_required_bitness, java_required_ver_min, java_required_ver_max)))
+    if (!(java_runtime_path = detect_java_runtime(java_required_bitness, java_required_ver_min, java_required_ver_max, &jvm_bitness, &jvm_version)))
     {
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"Java Runtime Environment (JRE) could not be found!");
         show_jre_download_notice(hinstance, hwnd, APP_HEADING, java_required_bitness, java_required_ver_min);
@@ -1723,7 +1732,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
         show_message(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The path of the Java runtime could not be determined!");
         goto cleanup;
     }
-    if (!BOOLIFY(file_is_executable(java_runtime_path)))
+    if (!BOOLIFY(jvm_bitness = file_is_executable(java_runtime_path)))
     {
         show_message_format(hwnd, MB_ICONERROR | MB_TOPMOST, APP_HEADING, L"The Java runtime could not be found or is invalid:\n\n%s\n\n\nRe-installing the application may fix the problem!", java_runtime_path);
         goto cleanup;
@@ -1739,7 +1748,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     jvm_heap_percent_max = bound_value(0U, load_uint32(hinstance, ID_STR_HEAPMAX, 0U), 100U);
     if ((jvm_heap_percent_min > 0U) || (jvm_heap_percent_max > 0U))
     {
-        const wchar_t *const jvm_heap_size_args = create_heap_size_parameters(jvm_heap_percent_min, jvm_heap_percent_max, jvm_extra_args);
+        const wchar_t *const jvm_heap_size_args = create_heap_size_parameters(jvm_heap_percent_min, jvm_heap_percent_max, jvm_extra_args, (jvm_bitness && (jvm_bitness < 64U)) ? 1024U : MAXDWORD);
         if (jvm_heap_size_args)
         {
             free((void*)jvm_extra_args);
