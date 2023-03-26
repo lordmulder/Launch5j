@@ -61,7 +61,7 @@
 #endif
 
 // Const
-static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptopenjdk.net/";
+static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptium.net/";
 static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin";
 static const wchar_t *const JRE_EXECUTABLE_NAME = L5J_ENABLE_GUI ? L"javaw.exe" : L"java.exe";
 static const size_t MIN_MUTEXID_LENGTH = 5U;
@@ -942,7 +942,7 @@ static BOOL detect_java_runtime_scan_javasoft(const wchar_t *const key_name, con
     return TRUE;
 }
 
-static BOOL detect_java_runtime_scan_adoptjdk(const wchar_t *const key_name, const ULONG_PTR user_data)
+static BOOL detect_java_runtime_scan_adoptium(const wchar_t *const key_name, const ULONG_PTR user_data)
 {
     static const wchar_t *const JVM_NATURE[] = { L"hotspot", L"openj9", NULL };
 
@@ -1022,8 +1022,10 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
     typedef struct { UINT mode; const wchar_t *path; } reg_key_t;
     static const reg_key_t REG_KEYS[] =
     {
-        { 1U, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 1U, L"SOFTWARE\\JavaSoft\\JRE" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
-        { 1U, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 1U, L"SOFTWARE\\JavaSoft\\JDK" }, { 2U, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
+        { 1U, L"SOFTWARE\\Eclipse Adoptium\\JRE" }, { 1U, L"SOFTWARE\\AdoptOpenJDK\\JRE" },
+        { 1U, L"SOFTWARE\\Eclipse Adoptium\\JDK" }, { 1U, L"SOFTWARE\\AdoptOpenJDK\\JDK" },
+        { 2U, L"SOFTWARE\\JavaSoft\\Java Runtime Environment" }, { 2U, L"SOFTWARE\\JavaSoft\\JRE" },
+        { 2U, L"SOFTWARE\\JavaSoft\\Java Development Kit"     }, { 2U, L"SOFTWARE\\JavaSoft\\JDK" },
         { 3U, L"SOFTWARE\\BellSoft\\Liberica" },
         { 3U, L"SOFTWARE\\Azul Systems\\Zulu" }, { 0U, NULL }
     };
@@ -1046,10 +1048,10 @@ static const wchar_t *detect_java_runtime(const DWORD required_bitness, const UL
             switch(REG_KEYS[j].mode)
             {
             case 1U:
-                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_javasoft, (ULONG_PTR)&search_state);
+                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_adoptium, (ULONG_PTR)&search_state);
                 break;
             case 2U:
-                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_adoptjdk, (ULONG_PTR)&search_state);
+                reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_javasoft, (ULONG_PTR)&search_state);
                 break;
             case 3U:
                 reg_enum_subkeys(HKEY_LOCAL_MACHINE, REG_KEYS[j].path, reg_view_64bit, detect_java_runtime_scan_liberica, (ULONG_PTR)&search_state);
