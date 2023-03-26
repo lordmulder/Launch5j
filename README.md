@@ -137,15 +137,15 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
 * **`ID_STR_HEAPMIN` (0x6)**  
   Specifies the the ***minimum*** Java heap size (i.e. JVM option `-Xms`), as percentage of the total physical memory.  
-  This must be an integral value in the `1` to `100` range, and it must be less than or equal to `ID_STR_HEAPMAX`.
+  This value must be an integral value in the `1` to `100` range.
   
-  (This option **must** be specified together with `ID_STR_HEAPMAX`)
+  (If `ID_STR_HEAPMAX` is specified too, then this value **must** be less than or equal to `ID_STR_HEAPMAX`).
 
 * **`ID_STR_HEAPMAX` (0x7)**  
-  Specifies the the ***maximum*** Java heap size (i.e. JVM option `-Xmx`), as percentage of the total physical memory.
-  This must be an integral value in the `1` to `100` range, and it must be greater than or equal to `ID_STR_HEAPMIN`.
+  Specifies the the ***maximum*** Java heap size (i.e. JVM option `-Xmx`), as percentage of the total physical memory.  
+  This value must be an integral value in the `1` to `100` range.
   
-  (This option **must** be specified together with `ID_STR_HEAPMIN`)
+  (If `ID_STR_HEAPMIN` is specified too, then this value **must** be greater than or equal to `ID_STR_HEAPMIN`).
 
 * **`ID_STR_JAVAMIN` (0x8)**  
   Specifies the ***minimum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `11.0.0.0`).  

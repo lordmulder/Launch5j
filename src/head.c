@@ -1216,19 +1216,22 @@ static const wchar_t *encode_commandline_str(const wchar_t *const command_line)
 
 const wchar_t *create_heap_size_parameters(const DWORD jvm_heap_percent_min, const DWORD jvm_heap_percent_max, const wchar_t *const jvm_extra_args)
 {
-    if ((jvm_heap_percent_min > 0U) && (jvm_heap_percent_max >= jvm_heap_percent_min))
+    const ULONGLONG physical_memory_size = get_physical_memory_size();
+    if (physical_memory_size > 0ULL) 
     {
-        const ULONGLONG physical_memory_size = get_physical_memory_size();
-        if (physical_memory_size > 0ULL) 
+        const DWORD heap_size_mbytes_min = ((jvm_heap_percent_min > 0U) && (jvm_heap_percent_min <= 100U)) ? ((DWORD)((((ULONGLONG)((jvm_heap_percent_min / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE)) : 0U;
+        const DWORD heap_size_mbytes_max = ((jvm_heap_percent_max > 0U) && (jvm_heap_percent_max <= 100U)) ? ((DWORD)((((ULONGLONG)((jvm_heap_percent_max / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE)) : 0U;
+        if ((heap_size_mbytes_min > 0U) && (heap_size_mbytes_max >= heap_size_mbytes_min))
         {
-            const DWORD heap_size_mbytes_min = (DWORD)((((ULONGLONG)((jvm_heap_percent_min / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE);
-            const DWORD heap_size_mbytes_max = (DWORD)((((ULONGLONG)((jvm_heap_percent_max / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE);
-            if ((heap_size_mbytes_min > 0U) && (heap_size_mbytes_max >= heap_size_mbytes_min))
-            {
-                return AVAILABLE(jvm_extra_args)
-                    ? aswprintf(L"-Xms%um -Xmx%um %s", heap_size_mbytes_min, heap_size_mbytes_max, jvm_extra_args)
-                    : aswprintf(L"-Xms%um -Xmx%um",    heap_size_mbytes_min, heap_size_mbytes_max);
-            }
+            return AVAILABLE(jvm_extra_args)
+                ? aswprintf(L"-Xms%um -Xmx%um %s", heap_size_mbytes_min, heap_size_mbytes_max, jvm_extra_args)
+                : aswprintf(L"-Xms%um -Xmx%um",    heap_size_mbytes_min, heap_size_mbytes_max);
+        }
+        else if ((heap_size_mbytes_min > 0U) || (heap_size_mbytes_max > 0U))
+        {
+            return AVAILABLE(jvm_extra_args)
+                ? aswprintf(L"-Xm%c%um %s", (heap_size_mbytes_min > 0U) ? L's' : L'x', (heap_size_mbytes_min > 0U) ? heap_size_mbytes_min : heap_size_mbytes_max, jvm_extra_args)
+                : aswprintf(L"-Xm%c%um",    (heap_size_mbytes_min > 0U) ? L's' : L'x', (heap_size_mbytes_min > 0U) ? heap_size_mbytes_min : heap_size_mbytes_max);
         }
     }
     return NULL;
@@ -1734,7 +1737,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     // Set minimum/maximum Java heap size
     jvm_heap_percent_min = bound_value(0U, load_uint32(hinstance, ID_STR_HEAPMIN, 0U), 100U);
     jvm_heap_percent_max = bound_value(0U, load_uint32(hinstance, ID_STR_HEAPMAX, 0U), 100U);
-    if ((jvm_heap_percent_min != 0U) && (jvm_heap_percent_max != 0U))
+    if ((jvm_heap_percent_min > 0U) || (jvm_heap_percent_max > 0U))
     {
         const wchar_t *const jvm_heap_size_args = create_heap_size_parameters(jvm_heap_percent_min, jvm_heap_percent_max, jvm_extra_args);
         if (jvm_heap_size_args)
@@ -1832,7 +1835,9 @@ cleanup:
 /* Entry points                                                             */
 /* ======================================================================== */
 
-#define THE_NUMBER_OF_THE_BEAST 666
+extern IMAGE_DOS_HEADER __ImageBase;
+extern LPWSTR _wcmdln;
+#define UNHANDELED_EXCEPTION_ERROR 666
 
 static LONG WINAPI unhandeled_exception(EXCEPTION_POINTERS *ExceptionInfo)
 {
@@ -1843,22 +1848,23 @@ static LONG WINAPI unhandeled_exception(EXCEPTION_POINTERS *ExceptionInfo)
     DWORD chars_written;
     WriteConsoleW(GetStdHandle(STD_ERROR_HANDLE), ERROR_MESSAGE, lstrlenW(ERROR_MESSAGE), &chars_written, NULL);
 #endif
-    TerminateProcess(GetCurrentProcess(), THE_NUMBER_OF_THE_BEAST);
+    TerminateProcess(GetCurrentProcess(), UNHANDELED_EXCEPTION_ERROR);
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
 #if L5J_ENABLE_GUI
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
 #ifdef NDEBUG
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
     SetUnhandledExceptionFilter(unhandeled_exception);
 #endif
-    return launch5j_main(hInstance, pCmdLine);
+    return launch5j_main(hInstance, get_commandline_args(_wcmdln));
 }
-#else
-extern IMAGE_DOS_HEADER __ImageBase;
-extern LPWSTR _wcmdln;
+
+#else /*L5J_ENABLE_GUI*/
+
 int wmain(int argc, wchar_t **argv, wchar_t **envp)
 {
 #ifdef NDEBUG
@@ -1868,4 +1874,5 @@ int wmain(int argc, wchar_t **argv, wchar_t **envp)
     _setmode(_fileno(stderr), _O_U8TEXT);
     return launch5j_main((HINSTANCE) &__ImageBase, get_commandline_args(_wcmdln));
 }
-#endif
+
+#endif /*L5J_ENABLE_GUI*/
