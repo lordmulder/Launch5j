@@ -74,7 +74,7 @@ Launch5j executables come in a number of variants, allowing you to pick the most
   
   At this time, the following Java distributions can be detected from the registry:
   - [Oracle JDK (JavaSoft)](https://www.oracle.com/java/technologies/javase-downloads.html)
-  - [AdoptOpenJDK](https://adoptopenjdk.net/)
+  - [Eclipse Adoptium](https://adoptium.net/)
   - [Liberica OpenJDK](https://bell-sw.com/)
   - [Zulu OpenJDK](https://www.azul.com/downloads/zulu-community/)
 
@@ -109,24 +109,24 @@ It is ***not*** necessary to re-build the executable files for that purpose. Ins
 
 Some options can be configured via the launcher executable's [STRINGTABLE](https://docs.microsoft.com/en-us/windows/win32/menurc/stringtable-resource) resource:
 
-* **`ID_STR_HEADING` (#1)**  
+* **`ID_STR_HEADING` (0x1)**  
   Specifies a custom application title that will be used, e.g., as the heading of message boxes.
 
-* **`ID_STR_JVMARGS` (#2)**  
+* **`ID_STR_JVMARGS` (0x2)**  
   Specifies *additional* options JVM options to be passed, such as `-Xmx2g` or `-Dproperty=value`.  
   See here for a list of available options:  
   <https://docs.oracle.com/javase/7/docs/technotes/tools/windows/java.html>
 
-* **`ID_STR_CMDARGS` (#3)**  
+* **`ID_STR_CMDARGS` (0x3)**  
   Specifies *additional* fixed command-line parameters to be passed to the Java application.  
 
-* **`ID_STR_JREPATH` (#4)**  
+* **`ID_STR_JREPATH` (0x4)**  
   Specifies the path to the Java runtime (`javaw.exe`) relative to the launcher executable location.
   If not specified, then the *default* runtime path `runtime\\bin\\javaw.exe` is assumed.
 
   (This option does **not** apply to the “registry” variant of Launch5j)
 
-* **`ID_STR_MUTEXID` (#5)**  
+* **`ID_STR_MUTEXID` (0x5)**  
   Specifies the application ID to be used when creating the [*single-instance*](http://www.bcbjournal.org/articles/vol3/9911/Single-instance_applications.htm) mutex.  
   The ID **must** be at least 5 characters in length and **should** be a *unique* string for each application!  
   If not specified, then **no** mutex will be created and thus *multiple* instances will be allowed.
@@ -135,7 +135,19 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
   (This option does **not** apply to the “nowait” variant of Launch5j)
 
-* **`ID_STR_JAVAMIN` (#6)**  
+* **`ID_STR_HEAPMIN` (0x6)**  
+  Specifies the the ***minimum*** Java heap size (i.e. JVM option `-Xms`), as percentage of the total physical memory.  
+  This must be an integral value in the `1` to `100` range, and it must be less than or equal to `ID_STR_HEAPMAX`.
+  
+  (This option **must** be specified together with `ID_STR_HEAPMAX`)
+
+* **`ID_STR_HEAPMAX` (0x7)**  
+  Specifies the the ***maximum*** Java heap size (i.e. JVM option `-Xmx`), as percentage of the total physical memory.
+  This must be an integral value in the `1` to `100` range, and it must be greater than or equal to `ID_STR_HEAPMIN`.
+  
+  (This option **must** be specified together with `ID_STR_HEAPMIN`)
+
+* **`ID_STR_JAVAMIN` (0x8)**  
   Specifies the ***minimum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `11.0.0.0`).  
   This values is *inclusive*, i.e. the specified JRE version or any newer JRE version will be accepted.  
   If not specified, then the *default* minimum supported JRE version `8.0.0.0` applies.
@@ -144,7 +156,7 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_JAVAMAX` (#7)**  
+* **`ID_STR_JAVAMAX` (0x9)**  
   Specifies the ***maximum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `12.0.0.0`).  
   This values is *exclusive*, i.e. only JRE versions *older* than the specified JRE version will be accepted.  
   If not specified, then there is **no** upper limit on the supported JRE version.
@@ -153,15 +165,15 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
   
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_BITNESS` (#8)**  
+* **`ID_STR_BITNESS` (0xA)**  
   Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
   If not specified, then 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
   
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_JAVAURL` (#9)**  
+* **`ID_STR_JAVAURL` (0xB)**  
   The Java download URL that will ne suggested, if **no** suitable JRE could be detected on the machine.  
-  If not specified, wes suggest downloading OpenJDK as provided by the [AdoptOpenJDK](https://adoptopenjdk.net/) project.
+  If not specified, wes suggest downloading OpenJDK, as provided by the [Eclipse Adoptium](https://adoptium.net/) project.
 
   *Hint:* The URL must begin with a `http://` or `https://` prefix; otherwise the URL will be ignored!
 
@@ -284,7 +296,7 @@ This project is partly inspired by the “Launch4j” project, even though it ha
 
 This work has been released under the MIT license:
 
-    Copyright 2020 LoRd_MuldeR <mulder2@gmx.de>
+    Copyright 2023 LoRd_MuldeR <mulder2@gmx.de>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in

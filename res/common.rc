@@ -42,6 +42,8 @@ BEGIN
     ID_STR_CMDARGS L"?" /*additional command-line args*/
     ID_STR_JREPATH L"?" /*relative path to JRE*/
     ID_STR_MUTEXID L"?" /*single instance mutex ID*/
+    ID_STR_HEAPMIN L"?" /*min. heap size, in percent of phys. memory*/
+    ID_STR_HEAPMAX L"?" /*max. heap size, in percent of phys. memory*/
 END
 
 /////////////////////////////////////////////////////////////////////////////

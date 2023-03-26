@@ -65,6 +65,7 @@ static const wchar_t *const JRE_DOWNLOAD_LINK_DEFAULT = L"https://adoptium.net/"
 static const wchar_t *const JRE_RELATIVE_PATH_DEFAULT = L"runtime\\bin";
 static const wchar_t *const JRE_EXECUTABLE_NAME = L5J_ENABLE_GUI ? L"javaw.exe" : L"java.exe";
 static const size_t MIN_MUTEXID_LENGTH = 5U;
+static const size_t BYTES_PER_MEGABYTE = 1024U * 1024U;
 static const DWORD SPLASH_SCREEN_TIMEOUT = 30000U;
 
 // Check platform
@@ -323,6 +324,18 @@ static BOOL running_on_64bit(void)
 #endif
 }
 
+static ULONGLONG get_physical_memory_size()
+{
+    MEMORYSTATUSEX memory_status;
+    ZeroMemory(&memory_status, sizeof(MEMORYSTATUSEX));
+    memory_status.dwLength = sizeof(MEMORYSTATUSEX);
+    if (GlobalMemoryStatusEx(&memory_status))
+    {
+        return memory_status.ullTotalPhys;
+    }
+    return 0L;
+}
+
 /* ======================================================================== */
 /* File name routines                                                       */
 /* ======================================================================== */
@@ -521,7 +534,7 @@ static DWORD load_uint32(const HINSTANCE hinstance, const UINT id, const DWORD f
 {
     DWORD value = fallback;
     const wchar_t *const str = load_string(hinstance, id);
-    if(NOT_EMPTY(str))
+    if(AVAILABLE(str))
     {
         value = wcstoul(str, NULL, 10);
     }
@@ -1201,6 +1214,26 @@ static const wchar_t *encode_commandline_str(const wchar_t *const command_line)
     return encoded;
 }
 
+const wchar_t *create_heap_size_parameters(const DWORD jvm_heap_percent_min, const DWORD jvm_heap_percent_max, const wchar_t *const jvm_extra_args)
+{
+    if ((jvm_heap_percent_min > 0U) && (jvm_heap_percent_max >= jvm_heap_percent_min))
+    {
+        const ULONGLONG physical_memory_size = get_physical_memory_size();
+        if (physical_memory_size > 0ULL) 
+        {
+            const DWORD heap_size_mbytes_min = (DWORD)((((ULONGLONG)((jvm_heap_percent_min / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE);
+            const DWORD heap_size_mbytes_max = (DWORD)((((ULONGLONG)((jvm_heap_percent_max / (double)100U) * physical_memory_size)) + (BYTES_PER_MEGABYTE - 1U)) / BYTES_PER_MEGABYTE);
+            if ((heap_size_mbytes_min > 0U) && (heap_size_mbytes_max >= heap_size_mbytes_min))
+            {
+                return AVAILABLE(jvm_extra_args)
+                    ? aswprintf(L"-Xms%um -Xmx%um %s", heap_size_mbytes_min, heap_size_mbytes_max, jvm_extra_args)
+                    : aswprintf(L"-Xms%um -Xmx%um",    heap_size_mbytes_min, heap_size_mbytes_max);
+            }
+        }
+    }
+    return NULL;
+}
+
 static const wchar_t *build_commandline(const DWORD pid, const wchar_t *const java_runtime_path, const wchar_t *const jar_file_path, const wchar_t *const jvm_extra_args, const wchar_t *const cmd_extra_args, const wchar_t *const cmd_input_args)
 {
     const wchar_t *command_line;
@@ -1549,6 +1582,11 @@ static void destroy_window(HWND *const hwnd)
     }
 }
 
+static DWORD bound_value(const DWORD min_value, const DWORD value, const DWORD max_value)
+{
+    return max(min_value, min(max_value, value));
+}
+
 /* ======================================================================== */
 /* MAIN                                                                     */
 /* ======================================================================== */
@@ -1562,7 +1600,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     const wchar_t *app_heading = NULL, *mutex_name = NULL, *executable_path = NULL, *executable_directory = NULL, *jarfile_path = NULL,
         *java_runtime_path = NULL, *jre_relative_path = NULL, *jvm_extra_args = NULL, *cmd_extra_args = NULL, *command_line = NULL;
     HANDLE mutex_handle = NULL;
-    DWORD java_required_bitness = 0U;
+    DWORD java_required_bitness = 0U, jvm_heap_percent_min = 0U, jvm_heap_percent_max = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL;
     HGDIOBJ splash_image = NULL;
     BOOL have_screen_created = FALSE;
@@ -1692,6 +1730,19 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     // Load additional options
     jvm_extra_args = load_string(hinstance, ID_STR_JVMARGS);
     cmd_extra_args = load_string(hinstance, ID_STR_CMDARGS);
+
+    // Set minimum/maximum Java heap size
+    jvm_heap_percent_min = bound_value(0U, load_uint32(hinstance, ID_STR_HEAPMIN, 0U), 100U);
+    jvm_heap_percent_max = bound_value(0U, load_uint32(hinstance, ID_STR_HEAPMAX, 0U), 100U);
+    if ((jvm_heap_percent_min != 0U) && (jvm_heap_percent_max != 0U))
+    {
+        const wchar_t *const jvm_heap_size_args = create_heap_size_parameters(jvm_heap_percent_min, jvm_heap_percent_max, jvm_extra_args);
+        if (jvm_heap_size_args)
+        {
+            free((void*)jvm_extra_args);
+            jvm_extra_args = jvm_heap_size_args;
+        }
+    }
 
     // Make sure command-line was created
     command_line = build_commandline(pid, java_runtime_path, jarfile_path, jvm_extra_args, cmd_extra_args, cmd_line_args);

@@ -31,14 +31,16 @@
 #define ID_BITMAP_SPLASH 1
 
 // STRINGS
-#define ID_STR_HEADING 1
-#define ID_STR_JVMARGS 2
-#define ID_STR_CMDARGS 3
-#define ID_STR_JREPATH 4
-#define ID_STR_MUTEXID 5
-#define ID_STR_JAVAMIN 6
-#define ID_STR_JAVAMAX 7
-#define ID_STR_BITNESS 8
-#define ID_STR_JAVAURL 9
+#define ID_STR_HEADING 0x1
+#define ID_STR_JVMARGS 0x2
+#define ID_STR_CMDARGS 0x3
+#define ID_STR_JREPATH 0x4
+#define ID_STR_MUTEXID 0x5
+#define ID_STR_HEAPMIN 0x6
+#define ID_STR_HEAPMAX 0x7
+#define ID_STR_JAVAMIN 0x8
+#define ID_STR_JAVAMAX 0x9
+#define ID_STR_BITNESS 0xA
+#define ID_STR_JAVAURL 0xB
 
 #endif
