@@ -1615,7 +1615,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     DWORD java_required_bitness = 0U, jvm_heap_percent_min = 0U, jvm_heap_percent_max = 0U, jvm_bitness = 0U;
     ULONGLONG java_required_ver_min = 0ULL, java_required_ver_max = 0ULL, jvm_version = 0ULL;
     HGDIOBJ splash_image = NULL;
-    BOOL have_screen_created = FALSE;
+    BOOL have_screen_created = FALSE, set_current_directory_enabled = TRUE;
     PROCESS_INFORMATION process_info;
     STARTUPINFOW startup_info;
 
@@ -1693,7 +1693,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
     }
 
     // Set the current directory
-    if (_wcsicmp(executable_directory, L".") != 0)
+    if (set_current_directory_enabled = (!BOOLIFY(load_uint32(hinstance, ID_STR_NSETCWD, 0U))))
     {
         set_current_directory(executable_directory);
     }
@@ -1770,7 +1770,7 @@ static int launch5j_main(const HINSTANCE hinstance, const wchar_t *const cmd_lin
 #endif
 
     // Now actually start the process!
-    if (!CreateProcessW(NULL, (LPWSTR)command_line, NULL, NULL, FALSE, 0U, NULL, executable_directory, &startup_info, &process_info))
+    if (!CreateProcessW(NULL, (LPWSTR)command_line, NULL, NULL, FALSE, 0U, NULL, set_current_directory_enabled ? executable_directory : NULL, &startup_info, &process_info))
     {
         const wchar_t *const error_text = describe_system_error(GetLastError());
         if (error_text)

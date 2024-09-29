@@ -44,6 +44,7 @@ BEGIN
     ID_STR_MUTEXID L"?" /*single instance mutex ID*/
     ID_STR_HEAPMIN L"?" /*min. heap size, in percent of phys. memory*/
     ID_STR_HEAPMAX L"?" /*max. heap size, in percent of phys. memory*/
+    ID_STR_NSETCWD L"?" /*do not set current working directory*/
 END
 
 /////////////////////////////////////////////////////////////////////////////

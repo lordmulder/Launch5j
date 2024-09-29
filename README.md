@@ -147,7 +147,12 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
   
   (If `ID_STR_HEAPMIN` is specified too, then this value **must** be greater than or equal to `ID_STR_HEAPMIN`).
 
-* **`ID_STR_JAVAMIN` (0x8)**  
+* **`ID_STR_NSETCWD` (0x8)**  
+  If set to a non-zero value, do ***not*** change the current working directory.
+
+  (By default, the current working directory is set to the directory where the executable file is located)
+
+* **`ID_STR_JAVAMIN` (0x9)**  
   Specifies the ***minimum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `11.0.0.0`).  
   This values is *inclusive*, i.e. the specified JRE version or any newer JRE version will be accepted.  
   If not specified, then the *default* minimum supported JRE version `8.0.0.0` applies.
@@ -156,7 +161,7 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
 
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_JAVAMAX` (0x9)**  
+* **`ID_STR_JAVAMAX` (0xA)**  
   Specifies the ***maximum*** supported JRE version, in the **`w.x.y.z`** format (e.g. `12.0.0.0`).  
   This values is *exclusive*, i.e. only JRE versions *older* than the specified JRE version will be accepted.  
   If not specified, then there is **no** upper limit on the supported JRE version.
@@ -165,13 +170,13 @@ Some options can be configured via the launcher executable's [STRINGTABLE](https
   
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_BITNESS` (0xA)**  
+* **`ID_STR_BITNESS` (0xB)**  
   Specifies the required ***bitness*** of the JRE. This can be either **`32`** (x86, aka i586) or **`64`** (x86-64).  
   If not specified, then 32-Bit *and* 64-Bit JREs are accepted, with a preference to 64-Bit.
   
   (This option only applies to the “registry” variant of Launch5j)
 
-* **`ID_STR_JAVAURL` (0xB)**  
+* **`ID_STR_JAVAURL` (0xC)**  
   The Java download URL that will ne suggested, if **no** suitable JRE could be detected on the machine.  
   If not specified, wes suggest downloading OpenJDK, as provided by the [Eclipse Adoptium](https://adoptium.net/) project.
 
@@ -296,7 +301,7 @@ This project is partly inspired by the “Launch4j” project, even though it ha
 
 This work has been released under the MIT license:
 
-    Copyright 2023 LoRd_MuldeR <mulder2@gmx.de>
+    Copyright 2024 LoRd_MuldeR <mulder2@gmx.de>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in

@@ -38,9 +38,10 @@
 #define ID_STR_MUTEXID 0x5
 #define ID_STR_HEAPMIN 0x6
 #define ID_STR_HEAPMAX 0x7
-#define ID_STR_JAVAMIN 0x8
-#define ID_STR_JAVAMAX 0x9
-#define ID_STR_BITNESS 0xA
-#define ID_STR_JAVAURL 0xB
+#define ID_STR_NSETCWD 0x8
+#define ID_STR_JAVAMIN 0x9
+#define ID_STR_JAVAMAX 0xA
+#define ID_STR_BITNESS 0xB
+#define ID_STR_JAVAURL 0xC
 
 #endif
