@@ -1,0 +1,113 @@
+name: "CI/CD"
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build Launch5j
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        include:
+          - flavor: "x86"
+            msystem: "MINGW32"
+            toolchain: "i686"
+          - flavor: "x64"
+            msystem: "MINGW64"
+            toolchain: "x86_64"
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: mingw-w64-${{ matrix.toolchain }}-toolchain base-devel git
+      - uses: actions/checkout@v4
+      - shell: msys2 {0}
+        run: make -B
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launch5j-bin-${{ matrix.flavor }}
+          path: bin/*.exe
+
+  example:
+    name: Build Example
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: "temurin"
+          architecture: x64
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: launch5j-bin-x86
+          path: bin
+      - run: |
+          ant -noinput -buildfile src/example/build.xml
+          mkdir -p /var/tmp/launch5j-example
+          cp -f bin/launch5j_x86_wrapped_registry.exe /var/tmp/launch5j-example/example.exe
+          dd if=src/example/dist/example.jar of=/var/tmp/launch5j-example/example.exe oflag=append conv=notrunc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launch5j-example
+          path: /var/tmp/launch5j-example/*
+
+  docs:
+    name: Generate Docs
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker://pandoc/core:2.9
+        with:
+          args: >-
+            -f markdown-implicit_figures -t html5
+            --standalone --ascii --toc --toc-depth=2
+            --css="etc/css/gh-pandoc.css"
+            -o "./README.html" "./README.yaml" "./README.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launch5j-doc
+          path: |
+            LICENSE.txt
+            README.html
+            etc/img/*.png
+            etc/css/*.css
+
+  release:
+    name: Generate Release Package
+    needs: [build, example, docs]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: launch5j-doc
+      - uses: actions/download-artifact@v4
+        with:
+          name: launch5j-bin-x86
+      - uses: actions/download-artifact@v4
+        with:
+          name: launch5j-bin-x64
+          path: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: launch5j-example
+          path: example
+      - run: |
+          mkdir -p /var/tmp/launch5j-release
+          tar -czvf /var/tmp/launch5j-release/launch5j-bin.$(date +"%Y-%m-%d").tar.gz *
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launch5j-release
+          path: /var/tmp/launch5j-release/*
+      - if: ${{ github.event_name == 'release' }}
+        uses: Roang-zero1/github-upload-release-artifacts-action@v2
+        with:
+          args: /var/tmp/launch5j-release/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
