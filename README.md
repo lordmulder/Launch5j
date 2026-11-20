@@ -101,9 +101,9 @@ All of the above Launch5j variants are available as `x86` (32-Bit) and `amd64` (
 
 Launch5j comes with a *default* executable icon and a *default* splash screen bitmap. These just server as an example and you probably want to replace them with your own *application-specific* graphics.
 
-It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN&nbsp;Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/), to *modify* the pre-compiled executable files as needed:  
+It is ***not*** necessary to re-build the executable files for that purpose. Instead, you can simply use a resource editor, such as [**XN&nbsp;Resource Editor**](https://web.archive.org/web/20100419201225/http://www.wilsonc.demon.co.uk/d10resourceeditor.htm) ([mirror](https://stefansundin.github.io/xn_resource_editor/)) or [**Resource Hacker&trade;**](http://www.angusj.com/resourcehacker/) or [Resource Cracker](https://www.pelock.com/products/resource-cracker), to *modify* the pre-compiled executable files as needed:  
 
-![Resource Hacker](etc/img/reshacker-example.png)
+![Resource Hacker](etc/img/reshacker-example.png) or [Resource Cracker](https://www.pelock.com/products/resource-cracker)
 
 ## Additional options
 
